@@ -1,4 +1,4 @@
-package ch.duckpond.universe.simulation;
+package ch.duckpond.universe.test.physics;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,18 +22,16 @@ import utils.box2d.FixtureUtils;
 
 public class UniverseTest extends TestbedTest {
 
-    final private static int        MASSES_ROWS        = 5;
-    final private static int        MASSES_COLS        = 5;
-    final private static int        MASSES_ROW_SPACING = 5;
-    final private static int        MASSES_COL_SPACING = 5;
+    final private static int    MASSES_ROWS        = 5;
+    final private static int    MASSES_COLS        = 5;
+    final private static int    MASSES_ROW_SPACING = 5;
+    final private static int    MASSES_COL_SPACING = 5;
 
-    final private static float      DENSITY            = 1;
+    final private static float  DENSITY            = 1;
 
-    final private static Random     RANDOM             = new Random();
+    final private static Random RANDOM             = new Random();
 
-    final Logger                    logger             = LogManager.getLogger(UniverseTest.class);
-
-    private static final List<Body> removeBodies       = new LinkedList<>();
+    final Logger                logger             = LogManager.getLogger(UniverseTest.class);
 
     @Override
     public void initTest(final boolean argDeserialized) {
@@ -52,7 +50,7 @@ public class UniverseTest extends TestbedTest {
                 bodyDef.allowSleep = false;
                 final Body body = getWorld().createBody(bodyDef);
                 body.createFixture(polygonShape, DENSITY);
-                logger.info(String.format("Mass: %f", body.getMass()));
+                logger.debug(String.format("Mass: %f", body.getMass()));
             }
         }
     }
@@ -76,53 +74,50 @@ public class UniverseTest extends TestbedTest {
                 }
             });
         });
+        // Solve contacts
+        Contact contact = getWorld().getContactList();
+        while (contact != null) {
+            logger.debug(String.format("Contact: (%s, %s)", contact.getFixtureA().getBody().getPosition(), contact.getFixtureB().getBody().getPosition()));
 
-        removeBodies.stream().forEach(body -> {
-            getWorld().destroyBody(body);
-        });
-        removeBodies.clear();
-    }
+            final Fixture fixture1 = contact.getFixtureA();
+            final Body body1 = fixture1.getBody();
 
-    @Override
-    public void beginContact(final Contact contact) {
-        super.beginContact(contact);
-        logger.info(String.format("Contact: (%s, %s)", contact.getFixtureA().getBody().getPosition(), contact.getFixtureB().getBody().getPosition()));
+            final Fixture fixture2 = contact.getFixtureB();
+            final Body body2 = fixture2.getBody();
 
-        final Fixture fixture1 = contact.getFixtureA();
-        final Body body1 = fixture1.getBody();
-
-        final Fixture fixture2 = contact.getFixtureB();
-        final Body body2 = fixture2.getBody();
-
-        Body winningBody;
-        Body loosingBody;
-        // elect 'winning' body
-        if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
-            winningBody = body2;
-            loosingBody = body1;
-        } else if (BodyUtils.getEnergy(body1) > BodyUtils.getEnergy(body2)) {
-            winningBody = body1;
-            loosingBody = body2;
-        } else {
-            // both have the same energy
-            // randomly destroy one of the bodies
-            if (RANDOM.nextFloat() < 0.5f) {
+            Body winningBody;
+            Body loosingBody;
+            // elect 'winning' body
+            if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
                 winningBody = body2;
                 loosingBody = body1;
-            } else {
+            } else if (BodyUtils.getEnergy(body1) > BodyUtils.getEnergy(body2)) {
                 winningBody = body1;
                 loosingBody = body2;
+            } else {
+                // both have the same energy
+                // randomly destroy one of the bodies
+                if (RANDOM.nextFloat() < 0.5f) {
+                    winningBody = body2;
+                    loosingBody = body1;
+                } else {
+                    winningBody = body1;
+                    loosingBody = body2;
+                }
             }
+            // combine bodies (combine all fixtures)
+            Fixture loosingFixture = loosingBody.getFixtureList();
+            while (loosingFixture != null) {
+                final FixtureDef fixtureDef = FixtureUtils.getFixtureDef(loosingFixture);
+                winningBody.createFixture(fixtureDef);
+                // next
+                loosingFixture = loosingFixture.getNext();
+            }
+            // destroy loosing body
+            getWorld().destroyBody(loosingBody);
+            // next
+            contact = contact.getNext();
         }
-        // combine bodies
-        final Fixture loosingFixture = loosingBody.getFixtureList();
-        while (loosingFixture != null) {
-            final FixtureDef fixtureDef = FixtureUtils.getFixtureDef(loosingFixture);
-            winningBody.createFixture(fixtureDef);
-            loosingFixture.getNext();
-        }
-        // destroy loosing body
-        removeBodies.add(loosingBody);
     }
 
     @Override

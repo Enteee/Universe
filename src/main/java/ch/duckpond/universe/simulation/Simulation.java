@@ -10,10 +10,12 @@ import org.jbox2d.testbed.framework.TestbedModel;
 import org.jbox2d.testbed.framework.TestbedPanel;
 import org.jbox2d.testbed.framework.j2d.TestPanelJ2D;
 
+import ch.duckpond.universe.test.physics.UniverseTest;
+
 public class Simulation {
-    
+
     private static final Logger logger = LogManager.getLogger(Simulation.class);
-    
+
     public static void main(final String argv[]) {
         logger.info("Universe");
         final TestbedModel model = new TestbedModel(); // create our model
