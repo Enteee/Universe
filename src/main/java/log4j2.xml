@@ -6,7 +6,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="ch.duckpond.universe." level="trace">
+    <Logger name="ch.duckpond.universe.test" level="info">
       <AppenderRef ref="Console"/>
     </Logger>
     <Root level="info">

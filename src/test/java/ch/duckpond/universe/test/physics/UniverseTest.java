@@ -6,19 +6,17 @@ import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jbox2d.collision.Manifold;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.Fixture;
-import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.contacts.Contact;
+import org.jbox2d.dynamics.joints.DistanceJointDef;
 import org.jbox2d.testbed.framework.TestbedTest;
 
 import utils.box2d.BodyUtils;
-import utils.box2d.FixtureUtils;
 
 public class UniverseTest extends TestbedTest {
 
@@ -35,8 +33,9 @@ public class UniverseTest extends TestbedTest {
 
     @Override
     public void initTest(final boolean argDeserialized) {
-        setTitle("Couple of Things Test");
+        setTitle("Universe test");
 
+        // no gravity
         getWorld().setGravity(new Vec2());
 
         for (int i = 0; i < MASSES_ROWS; i++) {
@@ -50,7 +49,7 @@ public class UniverseTest extends TestbedTest {
                 bodyDef.allowSleep = false;
                 final Body body = getWorld().createBody(bodyDef);
                 body.createFixture(polygonShape, DENSITY);
-                logger.debug(String.format("Mass: %f", body.getMass()));
+                logger.debug(String.format("New body with mass: %f", body.getMass()));
             }
         }
     }
@@ -63,7 +62,8 @@ public class UniverseTest extends TestbedTest {
         for (Body i = getWorld().getBodyList(); i != null; i = i.getNext()) {
             bodies.add(i);
         }
-        // Gravity
+
+        // Body gravity
         bodies.stream().forEach(body -> {
             bodies.stream().filter(otherBody -> otherBody != body).forEach(otherBody -> {
                 final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(otherBody.getPosition());
@@ -74,16 +74,18 @@ public class UniverseTest extends TestbedTest {
                 }
             });
         });
+
         // Solve contacts
         Contact contact = getWorld().getContactList();
         while (contact != null) {
-            logger.debug(String.format("Contact: (%s, %s)", contact.getFixtureA().getBody().getPosition(), contact.getFixtureB().getBody().getPosition()));
 
             final Fixture fixture1 = contact.getFixtureA();
             final Body body1 = fixture1.getBody();
 
             final Fixture fixture2 = contact.getFixtureB();
             final Body body2 = fixture2.getBody();
+
+            logger.info(String.format("Contact: (%s, %s)", body1.getPosition(), body2.getPosition()));
 
             Body winningBody;
             Body loosingBody;
@@ -105,30 +107,13 @@ public class UniverseTest extends TestbedTest {
                     loosingBody = body2;
                 }
             }
-            // combine bodies (combine all fixtures)
-            Fixture loosingFixture = loosingBody.getFixtureList();
-            while (loosingFixture != null) {
-                final FixtureDef fixtureDef = FixtureUtils.getFixtureDef(loosingFixture);
-                winningBody.createFixture(fixtureDef);
-                // next
-                loosingFixture = loosingFixture.getNext();
-            }
-            // destroy loosing body
-            getWorld().destroyBody(loosingBody);
+            // join the two bodies
+            final DistanceJointDef jointDef = new DistanceJointDef();
+            jointDef.initialize(winningBody, loosingBody, winningBody.getPosition(), loosingBody.getPosition());
+            getWorld().createJoint(jointDef);
             // next
             contact = contact.getNext();
         }
-    }
-
-    @Override
-    public void preSolve(final Contact contact, final Manifold oldManifold) {
-        // disable contact of two fixtures if they belong to the same body
-        if (contact.getFixtureA().getBody() == contact.getFixtureB().getBody()) {
-            logger.info("Disabling contact: (%s, %s)", contact.getFixtureA(), contact.getFixtureB());
-
-            contact.setEnabled(false);
-        }
-        super.preSolve(contact, oldManifold);
     }
 
     @Override
