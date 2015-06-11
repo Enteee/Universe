@@ -1,5 +1,7 @@
 package ch.duckpond.universe.test.physics;
 
+import ch.duckpond.universe.simulation.Simulation;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jbox2d.collision.shapes.CircleShape;
@@ -26,13 +28,12 @@ public class UniverseTest extends TestbedTest {
 
   private static final int   MASSES_ROWS        = 5;
 
+  private final Simulation   simulation         = new Simulation();
+
   /**
-   * Main.
-   *
-   * @param argv
-   *          command line arguments
+   * Starts this {@link TestbedTest}.
    */
-  public static void main(final String[] argv) {
+  public static void start() {
     final TestbedModel model = new TestbedModel(); // create our model
 
     // add tests
@@ -41,7 +42,7 @@ public class UniverseTest extends TestbedTest {
     model.addTest(new UniverseTest()); // add our test
 
     final TestbedPanel panel = new TestPanelJ2D(model); // create our
-    // testbed panel put both into our testbed frame etc
+    // Testbed panel put both into our testbed frame etc
     final JFrame testbed = new TestbedFrame(model, panel,
         TestbedController.UpdateBehavior.UPDATE_CALLED);
     testbed.setVisible(true);
@@ -71,7 +72,7 @@ public class UniverseTest extends TestbedTest {
         bodyDef.type = BodyType.DYNAMIC;
         bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS), MASSES_ROW_SPACING
             * (i % MASSES_ROWS));
-        bodyDef.angle = (float) (Math.PI / 4 * i);
+        bodyDef.angle = (float) ((Math.PI / 4) * i);
         bodyDef.allowSleep = false;
         final Body body = getWorld().createBody(bodyDef);
         body.createFixture(circleShape, DENSITY);
@@ -83,7 +84,7 @@ public class UniverseTest extends TestbedTest {
   @Override
   public void update() {
     super.update();
-
+    simulation.update(getWorld());
   }
 
 }

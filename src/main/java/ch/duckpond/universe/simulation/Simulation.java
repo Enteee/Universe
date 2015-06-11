@@ -15,30 +15,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class Simulation {
+public class Simulation implements Runnable {
 
   private static final Random RANDOM = new Random();
 
-  /**
-   * Main.
-   *
-   * @param argv
-   *          command line arguments
-   */
-  public static void main(final String[] argv) {
-    // world.step(dt, velocityIterations, positionIterations);
-  }
-
-  private final Logger logger = LogManager.getLogger(Simulation.class);
+  private final Logger        logger = LogManager.getLogger(Simulation.class);
 
   /**
    * Create world with no gravity.
    */
-  private final World  world  = new World(new Vec2());
-
-  public void update() {
-    update(world);
-  }
+  private final World         world  = new World(new Vec2());
 
   /**
    * Updates the given world.
@@ -58,20 +44,20 @@ public class Simulation {
     bodies.stream().forEach(
         body -> {
           bodies
-          .stream()
-          .filter(otherBody -> otherBody != body)
-          .forEach(
-              otherBody -> {
-                final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
-                    otherBody.getPosition());
-                if (delta.length() != 0) {
-                  final Vec2 force = new Vec2(delta).mulLocal(otherBody.getMass()
-                          * body.getMass() / (delta.length() * delta.length()));
-                  logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
-                      otherBody.getPosition(), force));
-                  body.applyForceToCenter(force);
-                }
-              });
+              .stream()
+              .filter(otherBody -> otherBody != body)
+              .forEach(
+                  otherBody -> {
+                    final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
+                        otherBody.getPosition());
+                    if (delta.length() != 0) {
+                      final Vec2 force = new Vec2(delta).mulLocal((otherBody.getMass() * body
+                          .getMass()) / (delta.length() * delta.length()));
+                      logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
+                          otherBody.getPosition(), force));
+                      body.applyForceToCenter(force);
+                    }
+                  });
         });
 
     // Solve contacts
@@ -113,6 +99,13 @@ public class Simulation {
       world.createJoint(jointDef);
       // next
       contact = contact.getNext();
+    }
+  }
+
+  @Override
+  public void run() {
+    while (true) {
+      update(world);
     }
   }
 }
