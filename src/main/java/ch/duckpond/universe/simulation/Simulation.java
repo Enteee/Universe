@@ -71,7 +71,7 @@ public class Simulation implements Runnable {
       // update physics
       update(world);
       // persist elements
-      // persistedWorld.save();
+      persistedWorld.save();
     }
   }
 
@@ -95,20 +95,20 @@ public class Simulation implements Runnable {
     bodies.stream().forEach(
         body -> {
           bodies
-          .stream()
-          .filter(otherBody -> otherBody != body)
-          .forEach(
-              otherBody -> {
-                final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
-                    otherBody.getPosition());
-                if (delta.length() != 0) {
-                  final Vec2 force = new Vec2(delta).mulLocal(otherBody.getMass()
-                          * body.getMass() / (delta.length() * delta.length()));
-                  logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
-                      otherBody.getPosition(), force));
-                  body.applyForceToCenter(force);
-                }
-              });
+              .stream()
+              .filter(otherBody -> otherBody != body)
+              .forEach(
+                  otherBody -> {
+                    final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
+                        otherBody.getPosition());
+                    if (delta.length() != 0) {
+                      final Vec2 force = new Vec2(delta).mulLocal((otherBody.getMass() * body
+                          .getMass()) / (delta.length() * delta.length()));
+                      logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
+                          otherBody.getPosition(), force));
+                      body.applyForceToCenter(force);
+                    }
+                  });
         });
 
     // Solve contacts

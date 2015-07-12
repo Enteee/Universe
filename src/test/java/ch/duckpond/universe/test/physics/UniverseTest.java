@@ -44,7 +44,7 @@ public class UniverseTest extends TestbedTest {
         bodyDef.type = BodyType.DYNAMIC;
         bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS), MASSES_ROW_SPACING
             * (i % MASSES_ROWS));
-        bodyDef.angle = (float) (Math.PI / 4 * i);
+        bodyDef.angle = (float) ((Math.PI / 4) * i);
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
         body.createFixture(circleShape, DENSITY);

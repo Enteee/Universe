@@ -9,74 +9,65 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.PostLoad;
 import org.mongodb.morphia.annotations.PrePersist;
 import org.mongodb.morphia.annotations.Reference;
-import org.mongodb.morphia.annotations.Transient;
 
 import java.util.Set;
 import java.util.TreeSet;
 
 @Entity
-public class PersistedWorld extends PersistedObject {
-
-  @Reference
-  private final Set<PersistedBody>  bodies = new TreeSet<>();
+public class PersistedWorld extends PersistedObject<World> {
 
   private Vec2                      gravity;
 
   @Reference
-  private final Set<PersistedJoint> joints = new TreeSet<>();
+  private final Set<PersistedBody>  bodies = new TreeSet<>();
 
-  @Transient
-  private World                     world;
+  @Reference
+  private final Set<PersistedJoint> joints = new TreeSet<>();
 
   /**
    * Constructor.
    *
    * @param world
-   *          the @{link World} to persist
+   *          the @{link World} to persist.
+   * @param datastore
+   *          the @{link Datastore} to save this object in.
    */
   public PersistedWorld(final World world, final Datastore datastore) {
-    super(datastore);
-    if (world == null) {
-      throw new IllegalArgumentException("world == null");
-    }
-    this.world = world;
+    super(world, datastore);
     save();
-  }
-
-  /**
-   * Get the persisted @{link World}.
-   *
-   * @return the persisted @{link World}
-   */
-  public World getWorld() {
-    return world;
   }
 
   @PostLoad
   private void postLoad() {
-    world = new World(gravity);
     bodies.stream().forEach(body -> {
-      body.getBody(world);
+      body.get();
     });
     joints.stream().forEach(joint -> {
-      joint.getJoint(world);
+      joint.get();
     });
   }
 
   @PrePersist
   private void prePersist() {
-    gravity = world.getGravity();
-    for (Body i = world.getBodyList(); i != null; i = i.getNext()) {
-      // no user data: not persisted yet
-      if (i.getUserData() == null) {
-        bodies.add(new PersistedBody(i, getDatastore()));
+    gravity = get().getGravity();
+    if (getId() != null) {
+      for (Body i = get().getBodyList(); i != null; i = i.getNext()) {
+        // no user data: not persisted yet
+        if (i.getUserData() == null) {
+          bodies.add(new PersistedBody(i, this, getDatastore()));
+        }
+      }
+      for (Joint i = get().getJointList(); i != null; i = i.getNext()) {
+        // no user data: not persisted yet
+        if (i.getUserData() == null) {
+          joints.add(new PersistedJoint(i, this, getDatastore()));
+        }
       }
     }
-    for (Joint i = world.getJointList(); i != null; i = i.getNext()) {
-      // no user data: not persisted yet
-      if (i.getUserData() == null) {
-        joints.add(new PersistedJoint(i, getDatastore()));
-      }
-    }
+  }
+
+  @Override
+  protected World construct() {
+    return new World(gravity);
   }
 }
