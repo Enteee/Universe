@@ -9,6 +9,7 @@ import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
+import org.jbox2d.dynamics.World;
 import org.jbox2d.testbed.framework.TestbedController;
 import org.jbox2d.testbed.framework.TestbedFrame;
 import org.jbox2d.testbed.framework.TestbedModel;
@@ -28,7 +29,28 @@ public class UniverseTest extends TestbedTest {
 
   private static final int   MASSES_ROWS        = 5;
 
-  private final Simulation   simulation         = new Simulation();
+  /**
+   * Add some masses to the world.
+   *
+   * @param world
+   *          where to add masses
+   */
+  public static void addMasses(final World world) {
+    for (int i = 0; i < MASSES_ROWS; i++) {
+      for (int j = 0; j < MASSES_COLS; j++) {
+        final CircleShape circleShape = new CircleShape();
+        circleShape.setRadius(MASSES_RADIUS);
+        final BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyType.DYNAMIC;
+        bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS), MASSES_ROW_SPACING
+            * (i % MASSES_ROWS));
+        bodyDef.angle = (float) (Math.PI / 4 * i);
+        bodyDef.allowSleep = false;
+        final Body body = world.createBody(bodyDef);
+        body.createFixture(circleShape, DENSITY);
+      }
+    }
+  }
 
   /**
    * Starts this {@link TestbedTest}.
@@ -50,7 +72,9 @@ public class UniverseTest extends TestbedTest {
 
   }
 
-  final Logger logger = LogManager.getLogger(UniverseTest.class);
+  private final Simulation simulation = new Simulation();
+
+  final Logger             logger     = LogManager.getLogger(UniverseTest.class);
 
   @Override
   public String getTestName() {
@@ -63,22 +87,8 @@ public class UniverseTest extends TestbedTest {
 
     // no gravity
     getWorld().setGravity(new Vec2());
-
-    for (int i = 0; i < MASSES_ROWS; i++) {
-      for (int j = 0; j < MASSES_COLS; j++) {
-        final CircleShape circleShape = new CircleShape();
-        circleShape.setRadius(MASSES_RADIUS);
-        final BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyType.DYNAMIC;
-        bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS), MASSES_ROW_SPACING
-            * (i % MASSES_ROWS));
-        bodyDef.angle = (float) ((Math.PI / 4) * i);
-        bodyDef.allowSleep = false;
-        final Body body = getWorld().createBody(bodyDef);
-        body.createFixture(circleShape, DENSITY);
-        logger.debug(String.format("New body with mass: %f", body.getMass()));
-      }
-    }
+    // add some masses
+    addMasses(getWorld());
   }
 
   @Override

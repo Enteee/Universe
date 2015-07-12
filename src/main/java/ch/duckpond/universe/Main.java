@@ -7,16 +7,16 @@ public class Main {
 
   private enum RunType {
     /**
-     * Start normal application.
+     * Start simulation.
      */
-    APPLICATION,
+    SIMULATION,
     /**
      * Start testbed.
      */
     TESTBED,
   }
 
-  private static final RunType RUNTYPE = RunType.TESTBED;
+  private static final RunType RUNTYPE = RunType.SIMULATION;
 
   /**
    * Main.
@@ -27,13 +27,12 @@ public class Main {
   public static void main(final String[] argv) {
     switch (RUNTYPE) {
       default :
-      case APPLICATION :
-        new Simulation();
+      case SIMULATION :
+        new Simulation().run();
         break;
       case TESTBED :
         UniverseTest.start();
         break;
     }
-    // world.step(dt, velocityIterations, positionIterations);
   }
 }

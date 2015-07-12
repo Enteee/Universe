@@ -1,6 +1,10 @@
 package ch.duckpond.universe.simulation;
 
+import ch.duckpond.universe.persisted.PersistedWorld;
+import ch.duckpond.universe.test.physics.UniverseTest;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
+
+import com.mongodb.MongoClient;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,6 +14,8 @@ import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.DistanceJointDef;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -17,14 +23,53 @@ import java.util.Random;
 
 public class Simulation implements Runnable {
 
-  private static final Random RANDOM = new Random();
+  private static final Random  RANDOM  = new Random();
 
-  private final Logger        logger = LogManager.getLogger(Simulation.class);
+  private final Logger         logger  = LogManager.getLogger(Simulation.class);
+
+  /**
+   * The persistence wrapper for the @{link World} object.
+   */
+  private final PersistedWorld persistedWorld;
 
   /**
    * Create world with no gravity.
    */
-  private final World         world  = new World(new Vec2());
+  private final World          world   = new World(new Vec2());
+
+  /**
+   * Morphia datastore.
+   */
+  final Datastore              datastore;
+
+  /**
+   * Morphia mongoDB object mapper.
+   */
+  final Morphia                morphia = new Morphia();
+
+  /**
+   * Construct.
+   */
+  public Simulation() {
+    // set up morphia
+    morphia.mapPackage("ch.duckpond.universe.persisted");
+    datastore = morphia.createDatastore(new MongoClient(), "test");
+    datastore.ensureIndexes();
+    persistedWorld = new PersistedWorld(world, datastore);
+  }
+
+  @Override
+  public void run() {
+    // TEST only: Add random masses
+    UniverseTest.addMasses(world);
+
+    while (true) {
+      // update physics
+      update(world);
+      // persist elements
+      persistedWorld.save();
+    }
+  }
 
   /**
    * Updates the given world.
@@ -44,20 +89,20 @@ public class Simulation implements Runnable {
     bodies.stream().forEach(
         body -> {
           bodies
-              .stream()
-              .filter(otherBody -> otherBody != body)
-              .forEach(
-                  otherBody -> {
-                    final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
-                        otherBody.getPosition());
-                    if (delta.length() != 0) {
-                      final Vec2 force = new Vec2(delta).mulLocal((otherBody.getMass() * body
-                          .getMass()) / (delta.length() * delta.length()));
-                      logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
-                          otherBody.getPosition(), force));
-                      body.applyForceToCenter(force);
-                    }
-                  });
+          .stream()
+          .filter(otherBody -> otherBody != body)
+          .forEach(
+              otherBody -> {
+                final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
+                    otherBody.getPosition());
+                if (delta.length() != 0) {
+                  final Vec2 force = new Vec2(delta).mulLocal(otherBody.getMass()
+                      * body.getMass() / (delta.length() * delta.length()));
+                  logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
+                      otherBody.getPosition(), force));
+                  body.applyForceToCenter(force);
+                }
+              });
         });
 
     // Solve contacts
@@ -83,7 +128,7 @@ public class Simulation implements Runnable {
         loosingBody = body2;
       } else {
         // both have the same energy
-        // randomly destroy one of the bodies
+        // randomly select one of the bodies as winner
         if (RANDOM.nextFloat() < 0.5f) {
           winningBody = body2;
           loosingBody = body1;
@@ -99,13 +144,6 @@ public class Simulation implements Runnable {
       world.createJoint(jointDef);
       // next
       contact = contact.getNext();
-    }
-  }
-
-  @Override
-  public void run() {
-    while (true) {
-      update(world);
     }
   }
 }

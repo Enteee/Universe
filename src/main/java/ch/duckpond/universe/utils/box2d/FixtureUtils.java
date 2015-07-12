@@ -9,7 +9,7 @@ public class FixtureUtils {
 
   /**
    * Clones a filter from a fixture.
-   * 
+   *
    * @param fixture
    *          the fixture to clone the {@link Filter} from
    * @return cloned {@link Filter}
@@ -22,7 +22,7 @@ public class FixtureUtils {
 
   /**
    * Clones a shape from a fixture.
-   * 
+   *
    * @param fixture
    *          the fixture to clone the @{link Shape} from
    * @return cloned @{link Shape}
@@ -32,11 +32,11 @@ public class FixtureUtils {
   }
 
   /**
-   * Clones the fixture definition from the given fixture.
-   * 
+   * Clones a @{link FixtureDef} from the given @{link Fixture}.
+   *
    * @param fixture
-   *          the fixture to clone the {@link Fixture} from
-   * @return cloned @ Fixture}
+   *          the @{link Fixture} from which to clone
+   * @return cloned @{link FixtureDef}
    */
   public static FixtureDef getFixtureDef(final Fixture fixture) {
     final FixtureDef fixtureDef = new FixtureDef();
