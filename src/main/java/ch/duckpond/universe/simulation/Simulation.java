@@ -23,9 +23,13 @@ import java.util.Random;
 
 public class Simulation implements Runnable {
 
-  private static final Random  RANDOM  = new Random();
+  private static final Random  RANDOM                     = new Random();
 
-  private final Logger         logger  = LogManager.getLogger(Simulation.class);
+  private static final int     UPDATE_POSITION_ITERATIONS = 8;
+
+  private static final float   UPDATE_TIME_STEP           = 1.0f / 60.0f;
+  private static final int     UPDATE_VELOCITY_ITERATIONS = 10;
+  private final Logger         logger                     = LogManager.getLogger(Simulation.class);
 
   /**
    * The persistence wrapper for the @{link World} object.
@@ -35,7 +39,7 @@ public class Simulation implements Runnable {
   /**
    * Create world with no gravity.
    */
-  private final World          world   = new World(new Vec2());
+  private final World          world                      = new World(new Vec2());
 
   /**
    * Morphia datastore.
@@ -45,7 +49,7 @@ public class Simulation implements Runnable {
   /**
    * Morphia mongoDB object mapper.
    */
-  final Morphia                morphia = new Morphia();
+  final Morphia                morphia                    = new Morphia();
 
   /**
    * Construct.
@@ -67,7 +71,7 @@ public class Simulation implements Runnable {
       // update physics
       update(world);
       // persist elements
-      persistedWorld.save();
+      // persistedWorld.save();
     }
   }
 
@@ -78,6 +82,8 @@ public class Simulation implements Runnable {
    *          the world to update.
    */
   public void update(final World world) {
+
+    world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
 
     // Get list of bodies
     final List<Body> bodies = new LinkedList<>();
@@ -97,7 +103,7 @@ public class Simulation implements Runnable {
                     otherBody.getPosition());
                 if (delta.length() != 0) {
                   final Vec2 force = new Vec2(delta).mulLocal(otherBody.getMass()
-                      * body.getMass() / (delta.length() * delta.length()));
+                          * body.getMass() / (delta.length() * delta.length()));
                   logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
                       otherBody.getPosition(), force));
                   body.applyForceToCenter(force);

@@ -84,7 +84,6 @@ public class UniverseTest extends TestbedTest {
   @Override
   public void initTest(final boolean argDeserialized) {
     setTitle("Universe test");
-
     // no gravity
     getWorld().setGravity(new Vec2());
     // add some masses
