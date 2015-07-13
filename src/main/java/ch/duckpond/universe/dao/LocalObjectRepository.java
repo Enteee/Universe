@@ -1,4 +1,4 @@
-package ch.duckpond.universe.persisted;
+package ch.duckpond.universe.dao;
 
 import org.bson.types.ObjectId;
 
@@ -13,8 +13,8 @@ import java.util.NoSuchElementException;
  */
 public class LocalObjectRepository {
 
-  private static LocalObjectRepository                instance;
-  private static Map<Class<?>, Map<ObjectId, Object>> repositories = new HashMap<>();
+  private static LocalObjectRepository               instance;
+  private final Map<Class<?>, Map<ObjectId, Object>> repositories = new HashMap<>();
 
   /**
    * Singleton.
@@ -28,21 +28,7 @@ public class LocalObjectRepository {
     return instance;
   }
 
-  /**
-   * Save an @{link Object} of a given @{link Class}.
-   * 
-   * @param id
-   *          the id to save this @{link Object} under.
-   * @param object
-   *          the @{link Object} to save.
-   */
-  public void save(final ObjectId id, final Object object) {
-    final Class<?> objectClass = object.getClass();
-    if (!repositories.containsKey(objectClass)) {
-      repositories.put(objectClass, new HashMap<>());
-    }
-    final Map<ObjectId, Object> objects = repositories.get(objectClass);
-    objects.put(id, object);
+  private LocalObjectRepository() {
   }
 
   /**
@@ -65,7 +51,21 @@ public class LocalObjectRepository {
     return repositories.get(objectClass).get(id);
   }
 
-  private LocalObjectRepository() {
+  /**
+   * Save an @{link Object} of a given @{link Class}.
+   * 
+   * @param id
+   *          the id to save this @{link Object} under.
+   * @param object
+   *          the @{link Object} to save.
+   */
+  public void save(final ObjectId id, final Object object) {
+    final Class<?> objectClass = object.getClass();
+    if (!repositories.containsKey(objectClass)) {
+      repositories.put(objectClass, new HashMap<>());
+    }
+    final Map<ObjectId, Object> objects = repositories.get(objectClass);
+    objects.put(id, object);
   }
 
 }

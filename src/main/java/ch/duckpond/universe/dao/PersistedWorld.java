@@ -1,4 +1,4 @@
-package ch.duckpond.universe.persisted;
+package ch.duckpond.universe.dao;
 
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
@@ -25,6 +25,13 @@ public class PersistedWorld extends PersistedObject<World> {
   private final Set<PersistedJoint> joints = new TreeSet<>();
 
   /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedWorld() {
+  }
+
+  /**
    * Constructor.
    *
    * @param world
@@ -33,8 +40,11 @@ public class PersistedWorld extends PersistedObject<World> {
    *          the @{link Datastore} to save this object in.
    */
   public PersistedWorld(final World world, final Datastore datastore) {
-    super(world, datastore);
-    save();
+    super(world);
+    if (datastore == null) {
+      throw new IllegalArgumentException("datasotre == null");
+    }
+    save(datastore);
   }
 
   @PostLoad
@@ -70,4 +80,5 @@ public class PersistedWorld extends PersistedObject<World> {
   protected World construct() {
     return new World(gravity);
   }
+
 }

@@ -1,4 +1,4 @@
-package ch.duckpond.universe.persisted;
+package ch.duckpond.universe.dao;
 
 import ch.duckpond.universe.utils.box2d.FixtureUtils;
 
@@ -12,10 +12,17 @@ import org.mongodb.morphia.annotations.Reference;
 @Entity
 public class PersistedFixture extends PersistedObject<Fixture> {
 
-  private FixtureDef          fixtureDef;
+  private FixtureDef    fixtureDef;
 
   @Reference
-  private final PersistedBody persistedBody;
+  private PersistedBody persistedBody;
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedFixture() {
+  }
 
   /**
    * Constructor.
@@ -29,13 +36,13 @@ public class PersistedFixture extends PersistedObject<Fixture> {
    */
   public PersistedFixture(final Fixture fixture, final PersistedBody persistedBody,
       final Datastore datastore) {
-    super(fixture, datastore);
+    super(fixture);
     if (persistedBody == null) {
       throw new IllegalArgumentException("persistedBody == null");
     }
     this.persistedBody = persistedBody;
+    save(datastore);
     get().setUserData(getId());
-    save();
   }
 
   @PrePersist

@@ -1,9 +1,7 @@
-package ch.duckpond.universe.persisted;
+package ch.duckpond.universe.dao;
 
 import ch.duckpond.universe.utils.box2d.JointUtils;
 
-import org.bson.types.ObjectId;
-import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.joints.Joint;
 import org.jbox2d.dynamics.joints.JointDef;
 import org.jbox2d.dynamics.joints.JointType;
@@ -15,14 +13,23 @@ import org.mongodb.morphia.annotations.Reference;
 @Entity
 public class PersistedJoint extends PersistedObject<Joint> {
 
-  public JointType             type;
-  public Object                userData;
-  private ObjectId             bodyA;
-  private ObjectId             bodyB;
-  public boolean               collideConnected;
+  public JointType       type;
+  public Object          userData;
+  @Reference
+  private PersistedBody  bodyA;
+  @Reference
+  private PersistedBody  bodyB;
+  public boolean         collideConnected;
 
   @Reference
-  private final PersistedWorld persistedWorld;
+  private PersistedWorld persistedWorld;
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedJoint() {
+  }
 
   /**
    * Constructor.
@@ -36,13 +43,13 @@ public class PersistedJoint extends PersistedObject<Joint> {
    */
   public PersistedJoint(final Joint joint, final PersistedWorld persistedWorld,
       final Datastore datastore) {
-    super(joint, datastore);
+    super(joint);
     if (persistedWorld == null) {
       throw new IllegalArgumentException("persistedWorld == null");
     }
     this.persistedWorld = persistedWorld;
-    joint.setUserData(getId());
-    save();
+    save(datastore);
+    get().setUserData(getId());
   }
 
   @PrePersist
@@ -50,8 +57,8 @@ public class PersistedJoint extends PersistedObject<Joint> {
     final JointDef jointDef = JointUtils.getJointDef(get());
     type = jointDef.type;
     userData = jointDef.userData;
-    bodyA = (ObjectId) jointDef.bodyA.getUserData();
-    bodyB = (ObjectId) jointDef.bodyB.getUserData();
+    bodyA = new PersistedBody(jointDef.bodyA, persistedWorld, getDatastore());
+    bodyB = new PersistedBody(jointDef.bodyB, persistedWorld, getDatastore());
     collideConnected = jointDef.collideConnected;
   }
 
@@ -60,8 +67,8 @@ public class PersistedJoint extends PersistedObject<Joint> {
     final JointDef jointDef = new JointDef();
     jointDef.type = type;
     jointDef.userData = userData;
-    jointDef.bodyA = (Body) LocalObjectRepository.getInstance().get(Body.class, bodyA);
-    jointDef.bodyB = (Body) LocalObjectRepository.getInstance().get(Body.class, bodyB);
+    jointDef.bodyA = bodyA.get();
+    jointDef.bodyB = bodyB.get();
     jointDef.collideConnected = collideConnected;
     return persistedWorld.get().createJoint(jointDef);
   }

@@ -1,4 +1,4 @@
-package ch.duckpond.universe.persisted;
+package ch.duckpond.universe.dao;
 
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
@@ -20,10 +20,17 @@ public class PersistedBody extends PersistedObject<Body> {
   private BodyDef                     bodyDef;
 
   @Reference
-  private final PersistedWorld        persistedWorld;
+  private PersistedWorld              persistedWorld;
 
   @Reference
   private final Set<PersistedFixture> fixtures = new TreeSet<>();
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedBody() {
+  }
 
   /**
    * Constructor.
@@ -37,13 +44,13 @@ public class PersistedBody extends PersistedObject<Body> {
    */
   public PersistedBody(final Body body, final PersistedWorld persistedWorld,
       final Datastore datastore) {
-    super(body, datastore);
+    super(body);
     if (persistedWorld == null) {
       throw new IllegalArgumentException("persistedWorld == null");
     }
     this.persistedWorld = persistedWorld;
+    save(datastore);
     get().setUserData(getId());
-    save();
   }
 
   @PostLoad

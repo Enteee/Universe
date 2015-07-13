@@ -1,6 +1,6 @@
 package ch.duckpond.universe.simulation;
 
-import ch.duckpond.universe.persisted.PersistedWorld;
+import ch.duckpond.universe.dao.PersistedWorld;
 import ch.duckpond.universe.test.physics.UniverseTest;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
@@ -71,7 +71,7 @@ public class Simulation implements Runnable {
       // update physics
       update(world);
       // persist elements
-      persistedWorld.save();
+      persistedWorld.save(datastore);
     }
   }
 
