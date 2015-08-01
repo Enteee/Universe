@@ -1,5 +1,6 @@
 package ch.duckpond.universe.simulation;
 
+import ch.duckpond.universe.dao.CachedDatastore;
 import ch.duckpond.universe.dao.PersistedWorld;
 import ch.duckpond.universe.test.physics.UniverseTest;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
@@ -14,7 +15,6 @@ import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.DistanceJointDef;
-import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 
 import java.util.LinkedList;
@@ -32,9 +32,16 @@ public class Simulation implements Runnable {
   private final Logger         logger                     = LogManager.getLogger(Simulation.class);
 
   /**
-   * The persistence wrapper for the @{link World} object.
+   * Morphia mongoDB object mapper.
    */
-  private final PersistedWorld persistedWorld;
+  final Morphia                morphia                    = new Morphia()
+                                                              .mapPackage("ch.duckpond.universe.persisted");
+
+  /**
+   * Morphia datastore.
+   */
+  final CachedDatastore        datastore                  = new CachedDatastore(morphia,
+                                                              new MongoClient(), "test");
 
   /**
    * Create world with no gravity.
@@ -42,24 +49,19 @@ public class Simulation implements Runnable {
   private final World          world                      = new World(new Vec2());
 
   /**
-   * Morphia datastore.
+   * The persistence wrapper for the @{link World} object.
    */
-  final Datastore              datastore;
-
-  /**
-   * Morphia mongoDB object mapper.
-   */
-  final Morphia                morphia                    = new Morphia();
+  private final PersistedWorld persistedWorld;
 
   /**
    * Construct.
    */
+
   public Simulation() {
     // set up morphia
-    morphia.mapPackage("ch.duckpond.universe.persisted");
-    datastore = morphia.createDatastore(new MongoClient(), "test");
     datastore.ensureIndexes();
     persistedWorld = new PersistedWorld(world, datastore);
+
   }
 
   @Override

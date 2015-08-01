@@ -11,24 +11,11 @@ import java.util.NoSuchElementException;
  * 
  * @author ente
  */
-public class LocalObjectRepository {
+public class PersistedObjectCache {
 
-  private static LocalObjectRepository               instance;
   private final Map<Class<?>, Map<ObjectId, Object>> repositories = new HashMap<>();
 
-  /**
-   * Singleton.
-   * 
-   * @return {@link LocalObjectRepository}
-   */
-  public static LocalObjectRepository getInstance() {
-    if (instance == null) {
-      instance = new LocalObjectRepository();
-    }
-    return instance;
-  }
-
-  private LocalObjectRepository() {
+  PersistedObjectCache() {
   }
 
   /**

@@ -1,7 +1,6 @@
 package ch.duckpond.universe.dao;
 
 import org.bson.types.ObjectId;
-import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Transient;
 
@@ -16,10 +15,10 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   private final Class<?> persistedObjectClass;
 
   @Transient
-  private Datastore      datastore;
+  private CachedDatastore datastore;
 
   @Id
-  private ObjectId       id;
+  private ObjectId id;
 
   /**
    * Default constructor.
@@ -55,34 +54,38 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   /**
    * Get the @{link Object} again.
    * 
+   * @param datastore
+   *          to get from
    * @return the @{link Object}
    */
   @SuppressWarnings("unchecked")
-  public T get() {
+  public T get(final CachedDatastore datastore) {
+    setDatastore(datastore);
     if (persistedObject == null) {
       // this happens when the @{link PersistedObject} is loaded from a
       // @{link Datastore}
       try {
         // get the local known object
-        persistedObject = (T) LocalObjectRepository.getInstance()
-            .get(persistedObjectClass, getId());
+        persistedObject = (T) datastore.getCache().get(persistedObjectClass, getId());
       } catch (final NoSuchElementException e) {
         // object locally unknown: construct a new object
         persistedObject = construct();
-        LocalObjectRepository.getInstance().save(getId(), persistedObject);
+        datastore.getCache().save(getId(), persistedObject);
+        assemble(persistedObject);
       }
     }
     return persistedObject;
   }
 
   /**
-   * Get the @{link Datastore} of this @{link Object}.
+   * Get the @{link {@link CachedDatastore} of this @{link Object}.
    * 
    * @return the datastore of this @{link Object}
    * @throws RuntimeException
-   *           if the @{link Object} was never saved to a @{link Datastore}
+   *           if the @{link Object} was never saved to a
+   *           {@link CachedDatastore}
    */
-  public Datastore getDatastore() {
+  public CachedDatastore getDatastore() {
     if (datastore == null) {
       throw new RuntimeException("Tried to get datastore of a never saved object");
     }
@@ -100,18 +103,21 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
 
   /**
    * Persist / save the object.
+   * 
+   * @param datastore
+   *          to save into
    */
-  public void save(final Datastore datastore) {
+  public void save(final CachedDatastore datastore) {
     setDatastore(datastore);
     if (id == null) {
       // save twice: 1. get id, 2. save references
       getDatastore().save(this);
     }
     getDatastore().save(this);
-    LocalObjectRepository.getInstance().save(getId(), persistedObject);
+    datastore.getCache().save(getId(), persistedObject);
   }
 
-  private void setDatastore(final Datastore datastore) {
+  private void setDatastore(final CachedDatastore datastore) {
     this.datastore = datastore;
   }
 
@@ -121,5 +127,11 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
    * @return a new @{link Object}.
    */
   protected abstract T construct();
+
+  /**
+   * Assembles the persisted object.
+   */
+  protected void assemble(final T persistedObject) {
+  }
 
 }
