@@ -16,6 +16,7 @@ import org.jbox2d.testbed.framework.TestbedModel;
 import org.jbox2d.testbed.framework.TestbedPanel;
 import org.jbox2d.testbed.framework.TestbedTest;
 import org.jbox2d.testbed.framework.j2d.TestPanelJ2D;
+import org.mongodb.morphia.Morphia;
 
 import javax.swing.JFrame;
 
@@ -27,7 +28,12 @@ public class UniverseTest extends TestbedTest {
   private static final int   MASSES_RADIUS      = 1;
   private static final int   MASSES_ROW_SPACING = 5;
 
-  private static final int   MASSES_ROWS        = 5;
+  private static final int MASSES_ROWS = 5;
+
+  /**
+   * Morphia mongoDB object mapper.
+   */
+  final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
 
   /**
    * Add some masses to the world.
@@ -42,8 +48,8 @@ public class UniverseTest extends TestbedTest {
         circleShape.setRadius(MASSES_RADIUS);
         final BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyType.DYNAMIC;
-        bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS), MASSES_ROW_SPACING
-            * (i % MASSES_ROWS));
+        bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS),
+            MASSES_ROW_SPACING * (i % MASSES_ROWS));
         bodyDef.angle = (float) ((Math.PI / 4) * i);
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
@@ -61,10 +67,10 @@ public class UniverseTest extends TestbedTest {
     // add tests
     // TestList.populateModel(model); // populate the provided testbed tests
     model.addCategory("Universe"); // add a category
-    model.addTest(new UniverseTest()); // add our test
+    model.addTest(new UniverseTest()); // add our testbed
 
     final TestbedPanel panel = new TestPanelJ2D(model); // create our
-    // Testbed panel put both into our testbed frame etc
+    // Testbed panel put both into our testbed frame etc.
     final JFrame testbed = new TestbedFrame(model, panel,
         TestbedController.UpdateBehavior.UPDATE_CALLED);
     testbed.setVisible(true);
@@ -74,7 +80,7 @@ public class UniverseTest extends TestbedTest {
 
   private final Simulation simulation = new Simulation();
 
-  final Logger             logger     = LogManager.getLogger(UniverseTest.class);
+  final Logger logger = LogManager.getLogger(UniverseTest.class);
 
   @Override
   public String getTestName() {
@@ -86,6 +92,7 @@ public class UniverseTest extends TestbedTest {
     setTitle("Universe test");
     // no gravity
     getWorld().setGravity(new Vec2());
+
     // add some masses
     addMasses(getWorld());
   }

@@ -52,11 +52,11 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   }
 
   /**
-   * Get the @{link Object} again.
+   * Get the T which is stored in this @{link PersistedObject}.
    * 
    * @param datastore
    *          to get from
-   * @return the @{link Object}
+   * @return T
    */
   @SuppressWarnings("unchecked")
   public T get(final CachedDatastore datastore) {
@@ -66,11 +66,11 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
       // @{link Datastore}
       try {
         // get the local known object
-        persistedObject = (T) datastore.getCache().get(persistedObjectClass, getId());
+        persistedObject = (T) getDatastore().getCache().get(persistedObjectClass, getId());
       } catch (final NoSuchElementException e) {
         // object locally unknown: construct a new object
         persistedObject = construct();
-        datastore.getCache().save(getId(), persistedObject);
+        getDatastore().getCache().save(getId(), persistedObject);
         assemble(persistedObject);
       }
     }
@@ -78,16 +78,16 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   }
 
   /**
-   * Get the @{link {@link CachedDatastore} of this @{link Object}.
+   * Get the {@link CachedDatastore} of this @{link Object}.
    * 
-   * @return the datastore of this @{link Object}
+   * @return the {@link CachedDatastore} of this @{link Object}
    * @throws RuntimeException
    *           if the @{link Object} was never saved to a
    *           {@link CachedDatastore}
    */
   public CachedDatastore getDatastore() {
     if (datastore == null) {
-      throw new RuntimeException("Tried to get datastore of a never saved object");
+      throw new RuntimeException("Tried to get the datastore of a never saved object");
     }
     return datastore;
   }
@@ -114,7 +114,7 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
       getDatastore().save(this);
     }
     getDatastore().save(this);
-    datastore.getCache().save(getId(), persistedObject);
+    getDatastore().getCache().save(getId(), persistedObject);
   }
 
   private void setDatastore(final CachedDatastore datastore) {
@@ -122,14 +122,14 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   }
 
   /**
-   * Constructs the persisted object.
+   * Constructs / create a new T out of the @{link PersistedObject} data.
    * 
    * @return a new @{link Object}.
    */
   protected abstract T construct();
 
   /**
-   * Assembles the persisted object.
+   * Assembles the @{link PersistedObject}.
    */
   protected void assemble(final T persistedObject) {
   }

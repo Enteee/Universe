@@ -38,7 +38,7 @@ public class PersistedBody extends PersistedObject<Body> {
    * @param persistedWorld
    *          the {@link PersistedWorld} the @{link Body} lives in.
    * @param datastore
-   *          the @{link CachedDatastore} to save this object in.
+   *          the @{link CachedDatastore} to save thi...s object in.
    */
   public PersistedBody(final Body body, final PersistedWorld persistedWorld,
       final CachedDatastore datastore) {
@@ -62,6 +62,10 @@ public class PersistedBody extends PersistedObject<Body> {
         }
       }
     }
+    // save all fixtures
+    fixtures.forEach(fixture -> {
+      fixture.save(getDatastore());
+    });
     bodyDefPojo.userData = null;
   }
 
@@ -86,7 +90,7 @@ public class PersistedBody extends PersistedObject<Body> {
 
   @Override
   public Body get(final CachedDatastore datastore) {
-    final Body body = super.get(getDatastore());
+    final Body body = super.get(datastore);
     body.setUserData(getId());
     return body;
   }

@@ -3,7 +3,7 @@ package ch.duckpond.universe.test.persistence;
 import ch.duckpond.universe.dao.CachedDatastore;
 import ch.duckpond.universe.dao.PersistedBody;
 import ch.duckpond.universe.dao.PersistedFixture;
-import ch.duckpond.universe.dao.PersistedJoint;
+import ch.duckpond.universe.dao.PersistedDistanceJoint;
 import ch.duckpond.universe.dao.PersistedWorld;
 import ch.duckpond.universe.simulation.Simulation;
 import ch.duckpond.universe.test.utils.TestUtilsBody;
@@ -11,6 +11,8 @@ import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import com.mongodb.MongoClient;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
@@ -33,6 +35,7 @@ public class PersistenceTest {
       .mapPackage("ch.duckpond.universe.persisted");
   private static CachedDatastore datastore = new CachedDatastore(morphia, new MongoClient(),
       "test");
+  private final Logger           logger    = LogManager.getLogger(PersistenceTest.class);
 
   private PersistedWorld persistedWorld;
 
@@ -52,7 +55,7 @@ public class PersistenceTest {
     // empty database
     datastore.delete(datastore.createQuery(PersistedFixture.class));
     datastore.delete(datastore.createQuery(PersistedBody.class));
-    datastore.delete(datastore.createQuery(PersistedJoint.class));
+    datastore.delete(datastore.createQuery(PersistedDistanceJoint.class));
     datastore.delete(datastore.createQuery(PersistedWorld.class));
     datastore.delete(datastore.createQuery(PersistedDummy.class));
   }
@@ -98,7 +101,8 @@ public class PersistenceTest {
     // get @{link Body} again using the same @{link CachedDatastore}
     final PersistedBody persistedBody1 = datastore.get(PersistedBody.class, body.getUserData());
     final Body body1 = persistedBody1.get(datastore);
-    // get @{link Body} again using an other @{link CachedDatastore}, simulates
+    // get @{link Body} again using an other @{link CachedDatastore} ->
+    // simulates
     // remote client
     final CachedDatastore datastore2 = new CachedDatastore(morphia, new MongoClient(), "test");
     final PersistedBody persistedBody2 = datastore2.get(PersistedBody.class, body.getUserData());
@@ -123,6 +127,11 @@ public class PersistenceTest {
     for (Body i = persistedWorld.get(datastore).getBodyList(); i != null; i = i.getNext()) {
       bodyDefsBefore.put((ObjectId) i.getUserData(), BodyUtils.getBodyDef(i));
     }
+    // update the simulation several times (simulate some time)
+    simulation.update(persistedWorld.get(datastore));
+    simulation.update(persistedWorld.get(datastore));
+    simulation.update(persistedWorld.get(datastore));
+    simulation.update(persistedWorld.get(datastore));
     simulation.update(persistedWorld.get(datastore));
     persistedWorld.save(datastore);
     // get new body defs of persisted objects
@@ -131,6 +140,8 @@ public class PersistenceTest {
       final BodyDef bodyDefOld = entry.getValue();
       final BodyDef bodyDefNew = BodyUtils.getBodyDef(body.get(datastore));
       // position should have changed
+      logger.info(String.format("bodyDefNew.position: %s != bodyDefOld.position: %s",
+          bodyDefNew.position, bodyDefOld.position));
       Assert.assertTrue((bodyDefNew.position.x != bodyDefOld.position.x)
           || (bodyDefNew.position.y != bodyDefOld.position.y));
     }

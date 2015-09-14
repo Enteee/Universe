@@ -63,7 +63,7 @@ public class PersistedFixture extends PersistedObject<Fixture> {
 
   @Override
   public Fixture get(final CachedDatastore datastore) {
-    final Fixture fixture = super.get(getDatastore());
+    final Fixture fixture = super.get(datastore);
     fixture.setUserData(getId());
     return fixture;
   }

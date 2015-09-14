@@ -3,6 +3,7 @@ package ch.duckpond.universe.dao;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.World;
+import org.jbox2d.dynamics.joints.DistanceJoint;
 import org.jbox2d.dynamics.joints.Joint;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.PrePersist;
@@ -20,7 +21,7 @@ public class PersistedWorld extends PersistedObject<World> {
   private final Set<PersistedBody> bodies = new TreeSet<>();
 
   @Reference
-  private final Set<PersistedJoint> joints = new TreeSet<>();
+  private final Set<PersistedDistanceJoint> joints = new TreeSet<>();
 
   /**
    * Morphia constructor.
@@ -58,9 +59,24 @@ public class PersistedWorld extends PersistedObject<World> {
       for (Joint i = get(getDatastore()).getJointList(); i != null; i = i.getNext()) {
         // no user data: not persisted yet
         if (i.getUserData() == null) {
-          joints.add(new PersistedJoint(i, this, getDatastore()));
+          switch (i.getType()) {
+            case DISTANCE :
+              joints.add(new PersistedDistanceJoint((DistanceJoint) i, this, getDatastore()));
+              break;
+            default :
+              throw new RuntimeException(
+                  String.format("Joint type: %s not implemented", i.getType()));
+          }
         }
       }
+      // save all bodies
+      bodies.forEach(body -> {
+        body.save(getDatastore());
+      });
+      // save all joints
+      joints.forEach(joint -> {
+        joint.save(getDatastore());
+      });
     }
   }
 

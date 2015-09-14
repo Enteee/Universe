@@ -7,9 +7,8 @@ import org.mongodb.morphia.annotations.PrePersist;
 
 public class PersistedDummy extends PersistedObject<Object> {
 
-  private String       string;
-  private int          persistCount = 0;
-  private final Object otherId      = "LALALA";
+  private String string;
+  private int    persistCount = 0;
 
   /**
    * Morphia constructor.

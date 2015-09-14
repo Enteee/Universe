@@ -23,45 +23,48 @@ import java.util.Random;
 
 public class Simulation implements Runnable {
 
-  private static final Random  RANDOM                     = new Random();
+  private static final Random RANDOM = new Random();
 
-  private static final int     UPDATE_POSITION_ITERATIONS = 8;
+  private static final int UPDATE_POSITION_ITERATIONS = 8;
 
-  private static final float   UPDATE_TIME_STEP           = 1.0f / 60.0f;
-  private static final int     UPDATE_VELOCITY_ITERATIONS = 10;
-  private final Logger         logger                     = LogManager.getLogger(Simulation.class);
+  private static final float UPDATE_TIME_STEP           = 1.0f / 60.0f;
+  private static final int   UPDATE_VELOCITY_ITERATIONS = 10;
+  private final Logger       logger                     = LogManager.getLogger(Simulation.class);
 
   /**
    * Morphia mongoDB object mapper.
    */
-  final Morphia                morphia                    = new Morphia()
-                                                              .mapPackage("ch.duckpond.universe.persisted");
+  final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
 
   /**
    * Morphia datastore.
    */
-  final CachedDatastore        datastore                  = new CachedDatastore(morphia,
-                                                              new MongoClient(), "test");
+  final CachedDatastore datastore = new CachedDatastore(morphia, new MongoClient(), "test");
 
   /**
    * Create world with no gravity.
    */
-  private final World          world                      = new World(new Vec2());
+  private World world = new World(new Vec2());
 
   /**
    * The persistence wrapper for the @{link World} object.
    */
-  private final PersistedWorld persistedWorld;
+  private PersistedWorld persistedWorld;
 
   /**
    * Construct.
    */
-
   public Simulation() {
     // set up morphia
     datastore.ensureIndexes();
-    persistedWorld = new PersistedWorld(world, datastore);
-
+    // try to load an existing world
+    persistedWorld = datastore.find(PersistedWorld.class).get();
+    if (persistedWorld != null) {
+      world = persistedWorld.get(datastore);
+    } else {
+      world = new World(new Vec2());
+      persistedWorld = new PersistedWorld(world, datastore);
+    }
   }
 
   @Override
@@ -94,24 +97,19 @@ public class Simulation implements Runnable {
     }
 
     // Body gravity
-    bodies.stream().forEach(
-        body -> {
-          bodies
-              .stream()
-              .filter(otherBody -> otherBody != body)
-              .forEach(
-                  otherBody -> {
-                    final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1).addLocal(
-                        otherBody.getPosition());
-                    if (delta.length() != 0) {
-                      final Vec2 force = new Vec2(delta).mulLocal((otherBody.getMass() * body
-                          .getMass()) / (delta.length() * delta.length()));
-                      logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
-                          otherBody.getPosition(), force));
-                      body.applyForceToCenter(force);
-                    }
-                  });
-        });
+    bodies.stream().forEach(body -> {
+      bodies.stream().filter(otherBody -> otherBody != body).forEach(otherBody -> {
+        final Vec2 delta = new Vec2(body.getPosition()).mulLocal(-1)
+            .addLocal(otherBody.getPosition());
+        if (delta.length() != 0) {
+          final Vec2 force = new Vec2(delta)
+              .mulLocal((otherBody.getMass() * body.getMass()) / (delta.length() * delta.length()));
+          logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
+              otherBody.getPosition(), force));
+          body.applyForceToCenter(force);
+        }
+      });
+    });
 
     // Solve contacts
     Contact contact = world.getContactList();
