@@ -2,7 +2,6 @@ package ch.duckpond.universe.simulation;
 
 import ch.duckpond.universe.dao.CachedDatastore;
 import ch.duckpond.universe.dao.PersistedWorld;
-import ch.duckpond.universe.test.physics.UniverseTest;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import com.mongodb.MongoClient;
@@ -27,62 +26,56 @@ public class Simulation implements Runnable {
 
   private static final int UPDATE_POSITION_ITERATIONS = 8;
 
-  private static final float    UPDATE_TIME_STEP           = 1.0f / 60.0f;
-  private static final int      UPDATE_VELOCITY_ITERATIONS = 10;
-  /**
-   * Morphia datastore.
-   */
-  private final CachedDatastore datastore;
-
-  private final Logger logger = LogManager.getLogger(Simulation.class);
+  private static final float UPDATE_TIME_STEP           = 1.0f / 60.0f;
+  private static final int   UPDATE_VELOCITY_ITERATIONS = 10;
+  private final Logger       logger                     = LogManager.getLogger(getClass());
 
   /**
    * Morphia mongoDB object mapper.
    */
-  private final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
-
+  private final Morphia         morphia   = new Morphia()
+      .mapPackage("ch.duckpond.universe.persisted");
+  /**
+   * Morphia datastore.
+   */
+  private final CachedDatastore datastore = new CachedDatastore(morphia, new MongoClient(), "test");
   /**
    * The persistence wrapper for the @{link World} object.
    */
-  private PersistedWorld persistedWorld;
-
-  /**
-   * Create world with no gravity.
-   */
-  private World world = new World(new Vec2());
+  private final PersistedWorld  persistedWorld;
 
   /**
    * Construct.
    */
   public Simulation() {
-    // set up morphia
-    datastore = new CachedDatastore(morphia, new MongoClient(), "test"); // here
-                                                                         // thx
-                                                                         // to
-                                                                         // eclipse->sort
-                                                                         // member
-    datastore.ensureIndexes();
-    // try to load an existing world
-    persistedWorld = datastore.find(PersistedWorld.class).get();
-    if (persistedWorld != null) {
-      world = persistedWorld.get(datastore);
-    } else {
-      world = new World(new Vec2());
-      persistedWorld = new PersistedWorld(world, datastore);
-    }
+    persistedWorld = new PersistedWorld(new World(new Vec2()), datastore);
+  }
+
+  /**
+   * Construct.
+   *
+   * @param persistedWorld
+   *          the {@link PersistedWorld} to run this simulation with
+   */
+  public Simulation(final PersistedWorld persistedWorld) {
+    this.persistedWorld = persistedWorld;
   }
 
   @Override
   public void run() {
-    // TEST only: Add random masses
-    UniverseTest.addMasses(world);
-
     while (true) {
-      // update physics
-      update(world);
-      // persist elements
-      persistedWorld.save(datastore);
+      step();
     }
+  }
+
+  /**
+   * Make a simulation step.
+   */
+  public void step() {
+    // update physics
+    update(persistedWorld.get(datastore));
+    // persist elements
+    persistedWorld.save(datastore);
   }
 
   /**
@@ -108,7 +101,7 @@ public class Simulation implements Runnable {
             .addLocal(otherBody.getPosition());
         if (delta.length() != 0) {
           final Vec2 force = new Vec2(delta)
-              .mulLocal(otherBody.getMass() * body.getMass() / (delta.length() * delta.length()));
+              .mulLocal((otherBody.getMass() * body.getMass()) / (delta.length() * delta.length()));
           logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
               otherBody.getPosition(), force));
           body.applyForceToCenter(force);

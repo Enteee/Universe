@@ -15,7 +15,7 @@ public class Main {
     TESTBED,
   }
 
-  private static final RunType RUNTYPE = RunType.SIMULATION;
+  private static final RunType RUNTYPE = RunType.TESTBED;
 
   /**
    * Main.

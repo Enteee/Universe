@@ -14,7 +14,7 @@ public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
   private DistanceJointDefPojo distanceJointDefPojo;
 
   @Reference
-  private final PersistedWorld persistedWorld;
+  private PersistedWorld persistedWorld;
 
   /**
    * Constructor.
@@ -35,6 +35,13 @@ public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
     this.persistedWorld = persistedWorld;
     save(datastore);
 
+  }
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedDistanceJoint() {
   }
 
   @Override

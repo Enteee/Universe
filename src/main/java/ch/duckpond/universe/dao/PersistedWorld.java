@@ -39,6 +39,13 @@ public class PersistedWorld extends PersistedObject<World> {
     save(datastore);
   }
 
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedWorld() {
+  }
+
   @Override
   public void assemble(final World persistedObject) {
     bodies.stream().forEach(body -> {

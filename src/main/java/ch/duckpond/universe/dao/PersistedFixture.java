@@ -14,7 +14,7 @@ public class PersistedFixture extends PersistedObject<Fixture> {
   private FixtureDefPojo fixtureDefPojo;
 
   @Reference
-  private final PersistedBody persistedBody;
+  private PersistedBody persistedBody;
 
   /**
    * Constructor.
@@ -34,6 +34,13 @@ public class PersistedFixture extends PersistedObject<Fixture> {
     }
     this.persistedBody = persistedBody;
     save(datastore);
+  }
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedFixture() {
   }
 
   @Override

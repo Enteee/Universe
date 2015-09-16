@@ -21,7 +21,7 @@ public class PersistedBody extends PersistedObject<Body> {
   private final Set<PersistedFixture> fixtures = new TreeSet<>();
 
   @Reference
-  private final PersistedWorld persistedWorld;
+  private PersistedWorld persistedWorld;
 
   /**
    * Constructor.
@@ -41,6 +41,13 @@ public class PersistedBody extends PersistedObject<Body> {
     }
     this.persistedWorld = persistedWorld;
     save(datastore);
+  }
+
+  /**
+   * Morphia constructor.
+   */
+  @SuppressWarnings("unused")
+  private PersistedBody() {
   }
 
   @Override
