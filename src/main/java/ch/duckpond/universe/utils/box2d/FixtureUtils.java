@@ -11,30 +11,6 @@ import org.jbox2d.dynamics.FixtureDef;
 public class FixtureUtils {
 
   /**
-   * Clones a filter from a fixture.
-   *
-   * @param filter
-   *          the {@link Filter} to clone
-   * @return cloned {@link Filter}
-   */
-  private static Filter cloneFilter(final Filter filter) {
-    final Filter returnFilter = new Filter();
-    returnFilter.set(filter);
-    return returnFilter;
-  }
-
-  /**
-   * Clones a shape from a fixture.
-   *
-   * @param shape
-   *          the @{link Shape} to clone
-   * @return cloned @{link Shape}
-   */
-  private static Shape cloneShape(final Shape shape) {
-    return shape.clone();
-  }
-
-  /**
    * Clones a @{link FixtureDef} from the given @{link Fixture}.
    *
    * @param fixture
@@ -89,6 +65,30 @@ public class FixtureUtils {
     fixtureDefPojo.restitution = fixtureDef.restitution;
     fixtureDefPojo.shape = cloneShape(fixtureDef.shape);
     return fixtureDefPojo;
+  }
+
+  /**
+   * Clones a filter from a fixture.
+   *
+   * @param filter
+   *          the {@link Filter} to clone
+   * @return cloned {@link Filter}
+   */
+  private static Filter cloneFilter(final Filter filter) {
+    final Filter returnFilter = new Filter();
+    returnFilter.set(filter);
+    return returnFilter;
+  }
+
+  /**
+   * Clones a shape from a fixture.
+   *
+   * @param shape
+   *          the @{link Shape} to clone
+   * @return cloned @{link Shape}
+   */
+  private static Shape cloneShape(final Shape shape) {
+    return shape.clone();
   }
 
   private FixtureUtils() {

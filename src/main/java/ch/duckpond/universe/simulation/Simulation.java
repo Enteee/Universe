@@ -27,24 +27,19 @@ public class Simulation implements Runnable {
 
   private static final int UPDATE_POSITION_ITERATIONS = 8;
 
-  private static final float UPDATE_TIME_STEP           = 1.0f / 60.0f;
-  private static final int   UPDATE_VELOCITY_ITERATIONS = 10;
-  private final Logger       logger                     = LogManager.getLogger(Simulation.class);
+  private static final float    UPDATE_TIME_STEP           = 1.0f / 60.0f;
+  private static final int      UPDATE_VELOCITY_ITERATIONS = 10;
+  /**
+   * Morphia datastore.
+   */
+  private final CachedDatastore datastore;
+
+  private final Logger logger = LogManager.getLogger(Simulation.class);
 
   /**
    * Morphia mongoDB object mapper.
    */
-  final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
-
-  /**
-   * Morphia datastore.
-   */
-  final CachedDatastore datastore = new CachedDatastore(morphia, new MongoClient(), "test");
-
-  /**
-   * Create world with no gravity.
-   */
-  private World world = new World(new Vec2());
+  private final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
 
   /**
    * The persistence wrapper for the @{link World} object.
@@ -52,10 +47,20 @@ public class Simulation implements Runnable {
   private PersistedWorld persistedWorld;
 
   /**
+   * Create world with no gravity.
+   */
+  private World world = new World(new Vec2());
+
+  /**
    * Construct.
    */
   public Simulation() {
     // set up morphia
+    datastore = new CachedDatastore(morphia, new MongoClient(), "test"); // here
+                                                                         // thx
+                                                                         // to
+                                                                         // eclipse->sort
+                                                                         // member
     datastore.ensureIndexes();
     // try to load an existing world
     persistedWorld = datastore.find(PersistedWorld.class).get();
@@ -103,7 +108,7 @@ public class Simulation implements Runnable {
             .addLocal(otherBody.getPosition());
         if (delta.length() != 0) {
           final Vec2 force = new Vec2(delta)
-              .mulLocal((otherBody.getMass() * body.getMass()) / (delta.length() * delta.length()));
+              .mulLocal(otherBody.getMass() * body.getMass() / (delta.length() * delta.length()));
           logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
               otherBody.getPosition(), force));
           body.applyForceToCenter(force);

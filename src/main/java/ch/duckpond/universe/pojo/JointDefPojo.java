@@ -9,16 +9,16 @@ import org.mongodb.morphia.annotations.Reference;
 
 /**
  * POJO for {@link JointDef}.
- * 
+ *
  * @author ente
  */
 public class JointDefPojo {
 
-  public JointType     type;
-  public ObjectId      userData;
   @Reference
   public PersistedBody bodyA;
   @Reference
   public PersistedBody bodyB;
   public boolean       collideConnected;
+  public JointType     type;
+  public ObjectId      userData;
 }

@@ -10,23 +10,23 @@ import java.util.NoSuchElementException;
 public abstract class PersistedObject<T> implements Comparable<PersistedObject<?>> {
 
   @Transient
-  private T              persistedObject;
+  private CachedDatastore datastore;
+  @Id
+  private ObjectId        id;
+
+  @Transient
+  private T persistedObject;
+
   @Transient
   private final Class<?> persistedObjectClass;
-
-  @Transient
-  private CachedDatastore datastore;
-
-  @Id
-  private ObjectId id;
 
   /**
    * Default constructor.
    */
   protected PersistedObject() {
     // http://blog.xebia.com/2009/02/07/acessing-generic-types-at-runtime-in-java/
-    persistedObjectClass = ((Class<?>) ((ParameterizedType) getClass().getGenericSuperclass())
-        .getActualTypeArguments()[0]);
+    persistedObjectClass = (Class<?>) ((ParameterizedType) getClass().getGenericSuperclass())
+        .getActualTypeArguments()[0];
   }
 
   /**
@@ -53,7 +53,7 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
 
   /**
    * Get the T which is stored in this @{link PersistedObject}.
-   * 
+   *
    * @param datastore
    *          to get from
    * @return T
@@ -79,7 +79,7 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
 
   /**
    * Get the {@link CachedDatastore} of this @{link Object}.
-   * 
+   *
    * @return the {@link CachedDatastore} of this @{link Object}
    * @throws RuntimeException
    *           if the @{link Object} was never saved to a
@@ -94,7 +94,7 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
 
   /**
    * Get the id of this @{link PersistedObject}.
-   * 
+   *
    * @return the id
    */
   public ObjectId getId() {
@@ -103,7 +103,7 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
 
   /**
    * Persist / save the object.
-   * 
+   *
    * @param datastore
    *          to save into
    */
@@ -122,16 +122,16 @@ public abstract class PersistedObject<T> implements Comparable<PersistedObject<?
   }
 
   /**
-   * Constructs / create a new T out of the @{link PersistedObject} data.
-   * 
-   * @return a new @{link Object}.
-   */
-  protected abstract T construct();
-
-  /**
    * Assembles the @{link PersistedObject}.
    */
   protected void assemble(final T persistedObject) {
   }
+
+  /**
+   * Constructs / create a new T out of the @{link PersistedObject} data.
+   *
+   * @return a new @{link Object}.
+   */
+  protected abstract T construct();
 
 }

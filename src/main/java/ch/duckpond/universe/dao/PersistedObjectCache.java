@@ -8,7 +8,7 @@ import java.util.NoSuchElementException;
 
 /**
  * This class is being used for fast lookup of {@link PersistedObject} by id.
- * 
+ *
  * @author ente
  */
 public class PersistedObjectCache {
@@ -20,7 +20,7 @@ public class PersistedObjectCache {
 
   /**
    * Gets an @{link Objects} stored.
-   * 
+   *
    * @param objectClass
    *          the @{link Class} of the object to get.
    * @param id
@@ -40,7 +40,7 @@ public class PersistedObjectCache {
 
   /**
    * Save an @{link Object} of a given @{link Class}.
-   * 
+   *
    * @param id
    *          the id to save this @{link Object} under.
    * @param object

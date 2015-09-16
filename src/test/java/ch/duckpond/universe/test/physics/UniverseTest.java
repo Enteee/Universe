@@ -31,11 +31,6 @@ public class UniverseTest extends TestbedTest {
   private static final int MASSES_ROWS = 5;
 
   /**
-   * Morphia mongoDB object mapper.
-   */
-  final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
-
-  /**
    * Add some masses to the world.
    *
    * @param world
@@ -50,7 +45,7 @@ public class UniverseTest extends TestbedTest {
         bodyDef.type = BodyType.DYNAMIC;
         bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS),
             MASSES_ROW_SPACING * (i % MASSES_ROWS));
-        bodyDef.angle = (float) ((Math.PI / 4) * i);
+        bodyDef.angle = (float) (Math.PI / 4 * i);
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
         body.createFixture(circleShape, DENSITY);
@@ -81,6 +76,11 @@ public class UniverseTest extends TestbedTest {
   private final Simulation simulation = new Simulation();
 
   final Logger logger = LogManager.getLogger(UniverseTest.class);
+
+  /**
+   * Morphia mongoDB object mapper.
+   */
+  final Morphia morphia = new Morphia().mapPackage("ch.duckpond.universe.persisted");
 
   @Override
   public String getTestName() {

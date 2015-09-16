@@ -14,14 +14,7 @@ public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
   private DistanceJointDefPojo distanceJointDefPojo;
 
   @Reference
-  private PersistedWorld persistedWorld;
-
-  /**
-   * Morphia constructor.
-   */
-  @SuppressWarnings("unused")
-  private PersistedDistanceJoint() {
-  }
+  private final PersistedWorld persistedWorld;
 
   /**
    * Constructor.
@@ -44,6 +37,19 @@ public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
 
   }
 
+  @Override
+  public DistanceJoint get(final CachedDatastore datastore) {
+    final DistanceJoint joint = super.get(datastore);
+    joint.setUserData(getId());
+    return joint;
+  }
+
+  @Override
+  public void save(final CachedDatastore datastore) {
+    super.save(datastore);
+    get(datastore).setUserData(getId());
+  }
+
   @PrePersist
   private void prePersist() {
     distanceJointDefPojo = DistanceJointUtils.getDistanceJointDefPojo(
@@ -55,18 +61,5 @@ public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
   protected DistanceJoint construct() {
     return (DistanceJoint) persistedWorld.get(getDatastore())
         .createJoint(DistanceJointUtils.getDistanceJointDef(distanceJointDefPojo, getDatastore()));
-  }
-
-  @Override
-  public void save(final CachedDatastore datastore) {
-    super.save(datastore);
-    get(datastore).setUserData(getId());
-  }
-
-  @Override
-  public DistanceJoint get(final CachedDatastore datastore) {
-    final DistanceJoint joint = super.get(datastore);
-    joint.setUserData(getId());
-    return joint;
   }
 }

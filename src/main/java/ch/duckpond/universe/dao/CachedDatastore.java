@@ -11,18 +11,19 @@ public class CachedDatastore extends DatastoreImpl {
   private final PersistedObjectCache persistedObjectCache = new PersistedObjectCache();
 
   /**
-   * @see DatastoreImpl#DatastoreImpl(Morphia, MongoClient, String).
-   */
-  public CachedDatastore(final Morphia morphia, final MongoClient mongoClient, final String dbName) {
-    super(morphia, mongoClient, dbName);
-  }
-
-  /**
    * @see DatastoreImpl#DatastoreImpl(Morphia, Mapper, MongoClient, String).
    */
   public CachedDatastore(final Morphia morphia, final Mapper mapper, final MongoClient mongoClient,
       final String dbName) {
     super(morphia, mapper, mongoClient, dbName);
+  }
+
+  /**
+   * @see DatastoreImpl#DatastoreImpl(Morphia, MongoClient, String).
+   */
+  public CachedDatastore(final Morphia morphia, final MongoClient mongoClient,
+      final String dbName) {
+    super(morphia, mongoClient, dbName);
   }
 
   public PersistedObjectCache getCache() {

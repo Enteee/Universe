@@ -7,16 +7,16 @@ import org.jbox2d.dynamics.FixtureDef;
 
 /**
  * POJO for {@link FixtureDef}.
- * 
+ *
  * @author ente
  */
 public class FixtureDefPojo {
 
+  public float    density;
+  public Filter   filter;
+  public float    friction;
+  public boolean  isSensor;
+  public float    restitution;
   public Shape    shape;
   public ObjectId userData;
-  public float    friction;
-  public float    restitution;
-  public float    density;
-  public boolean  isSensor;
-  public Filter   filter;
 }

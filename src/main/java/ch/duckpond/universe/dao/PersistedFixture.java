@@ -14,14 +14,7 @@ public class PersistedFixture extends PersistedObject<Fixture> {
   private FixtureDefPojo fixtureDefPojo;
 
   @Reference
-  private PersistedBody persistedBody;
-
-  /**
-   * Morphia constructor.
-   */
-  @SuppressWarnings("unused")
-  private PersistedFixture() {
-  }
+  private final PersistedBody persistedBody;
 
   /**
    * Constructor.
@@ -43,6 +36,19 @@ public class PersistedFixture extends PersistedObject<Fixture> {
     save(datastore);
   }
 
+  @Override
+  public Fixture get(final CachedDatastore datastore) {
+    final Fixture fixture = super.get(datastore);
+    fixture.setUserData(getId());
+    return fixture;
+  }
+
+  @Override
+  public void save(final CachedDatastore datastore) {
+    super.save(datastore);
+    get(datastore).setUserData(getId());
+  }
+
   @PrePersist
   private void prePersist() {
     fixtureDefPojo = FixtureUtils
@@ -53,18 +59,5 @@ public class PersistedFixture extends PersistedObject<Fixture> {
   protected Fixture construct() {
     return persistedBody.get(getDatastore())
         .createFixture(FixtureUtils.getFixtureDef(fixtureDefPojo));
-  }
-
-  @Override
-  public void save(final CachedDatastore datastore) {
-    super.save(datastore);
-    get(datastore).setUserData(getId());
-  }
-
-  @Override
-  public Fixture get(final CachedDatastore datastore) {
-    final Fixture fixture = super.get(datastore);
-    fixture.setUserData(getId());
-    return fixture;
   }
 }

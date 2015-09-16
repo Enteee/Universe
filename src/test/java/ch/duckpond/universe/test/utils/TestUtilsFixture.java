@@ -9,9 +9,9 @@ import java.util.Random;
 
 public class TestUtilsFixture {
 
-  private static final Random RANDOM      = new Random();
+  private static final float MAX_DENSITY = 10;
 
-  private static final float  MAX_DENSITY = 10;
+  private static final Random RANDOM = new Random();
 
   public static Fixture randomFixture(final Body body) {
     final FixtureDef fixtureDef = new FixtureDef();

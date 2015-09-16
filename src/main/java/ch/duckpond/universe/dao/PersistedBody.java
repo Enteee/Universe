@@ -18,17 +18,10 @@ public class PersistedBody extends PersistedObject<Body> {
   private BodyDefPojo bodyDefPojo;
 
   @Reference
-  private PersistedWorld persistedWorld;
-
-  @Reference
   private final Set<PersistedFixture> fixtures = new TreeSet<>();
 
-  /**
-   * Morphia constructor.
-   */
-  @SuppressWarnings("unused")
-  private PersistedBody() {
-  }
+  @Reference
+  private final PersistedWorld persistedWorld;
 
   /**
    * Constructor.
@@ -48,6 +41,19 @@ public class PersistedBody extends PersistedObject<Body> {
     }
     this.persistedWorld = persistedWorld;
     save(datastore);
+  }
+
+  @Override
+  public Body get(final CachedDatastore datastore) {
+    final Body body = super.get(datastore);
+    body.setUserData(getId());
+    return body;
+  }
+
+  @Override
+  public void save(final CachedDatastore datastore) {
+    super.save(datastore);
+    get(datastore).setUserData(getId());
   }
 
   @PrePersist
@@ -70,11 +76,6 @@ public class PersistedBody extends PersistedObject<Body> {
   }
 
   @Override
-  protected Body construct() {
-    return persistedWorld.get(getDatastore()).createBody(BodyUtils.getBodyDef(bodyDefPojo));
-  }
-
-  @Override
   protected void assemble(final Body persistedBody) {
     fixtures.stream().forEach(fixture -> {
       fixture.get(getDatastore());
@@ -83,16 +84,8 @@ public class PersistedBody extends PersistedObject<Body> {
   }
 
   @Override
-  public void save(final CachedDatastore datastore) {
-    super.save(datastore);
-    get(datastore).setUserData(getId());
-  }
-
-  @Override
-  public Body get(final CachedDatastore datastore) {
-    final Body body = super.get(datastore);
-    body.setUserData(getId());
-    return body;
+  protected Body construct() {
+    return persistedWorld.get(getDatastore()).createBody(BodyUtils.getBodyDef(bodyDefPojo));
   }
 
 }

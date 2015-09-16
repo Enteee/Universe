@@ -15,20 +15,13 @@ import java.util.TreeSet;
 @Entity
 public class PersistedWorld extends PersistedObject<World> {
 
-  private Vec2 gravity;
-
   @Reference
   private final Set<PersistedBody> bodies = new TreeSet<>();
 
+  private Vec2 gravity;
+
   @Reference
   private final Set<PersistedDistanceJoint> joints = new TreeSet<>();
-
-  /**
-   * Morphia constructor.
-   */
-  @SuppressWarnings("unused")
-  private PersistedWorld() {
-  }
 
   /**
    * Constructor.
@@ -44,6 +37,17 @@ public class PersistedWorld extends PersistedObject<World> {
       throw new IllegalArgumentException("datasotre == null");
     }
     save(datastore);
+  }
+
+  @Override
+  public void assemble(final World persistedObject) {
+    bodies.stream().forEach(body -> {
+      body.get(getDatastore());
+    });
+    joints.stream().forEach(joint -> {
+      joint.get(getDatastore());
+    });
+    super.assemble(persistedObject);
   }
 
   @PrePersist
@@ -83,17 +87,6 @@ public class PersistedWorld extends PersistedObject<World> {
   @Override
   protected World construct() {
     return new World(gravity);
-  }
-
-  @Override
-  public void assemble(final World persistedObject) {
-    bodies.stream().forEach(body -> {
-      body.get(getDatastore());
-    });
-    joints.stream().forEach(joint -> {
-      joint.get(getDatastore());
-    });
-    super.assemble(persistedObject);
   }
 
 }

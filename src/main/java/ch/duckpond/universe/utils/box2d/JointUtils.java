@@ -13,7 +13,7 @@ class JointUtils {
 
   /**
    * Assembles a {@link JointDef} from the given {@link Joint}.
-   * 
+   *
    * @param joint
    *          the {@link Joint} to assemble from
    * @param jointDef
@@ -29,7 +29,7 @@ class JointUtils {
 
   /**
    * Assembles a {@link JointDef} from the given {@link JointDefPojo}.
-   * 
+   *
    * @param jointDefPojo
    *          the {@link JointDefPojo} to assemble from
    * @param jointDef

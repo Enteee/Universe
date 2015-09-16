@@ -9,10 +9,9 @@ public class Main {
     /**
      * Start simulation.
      */
-    SIMULATION,
-    /**
-     * Start testbed.
-     */
+    SIMULATION, /**
+                 * Start testbed.
+                 */
     TESTBED,
   }
 
