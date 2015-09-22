@@ -8,6 +8,12 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.PrePersist;
 import org.mongodb.morphia.annotations.Reference;
 
+/**
+ * DAO for {@link PersistedDistanceJoint} TODO: this DAO can not be loaded
+ * properly.
+ * 
+ * @author ente
+ */
 @Entity
 public class PersistedDistanceJoint extends PersistedObject<DistanceJoint> {
 

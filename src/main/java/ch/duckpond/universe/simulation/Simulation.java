@@ -13,7 +13,6 @@ import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.Contact;
-import org.jbox2d.dynamics.joints.DistanceJointDef;
 import org.mongodb.morphia.Morphia;
 
 import java.util.LinkedList;
@@ -28,6 +27,7 @@ public class Simulation implements Runnable {
 
   private static final float UPDATE_TIME_STEP           = 1.0f / 60.0f;
   private static final int   UPDATE_VELOCITY_ITERATIONS = 10;
+  private static final float GRAVITATIONAL_CONSTANT     = 5;
   private final Logger       logger                     = LogManager.getLogger(getClass());
 
   /**
@@ -75,7 +75,7 @@ public class Simulation implements Runnable {
     // update physics
     update(persistedWorld.get(datastore));
     // persist elements
-    persistedWorld.save(datastore);
+    // persistedWorld.save(datastore);
   }
 
   /**
@@ -101,7 +101,8 @@ public class Simulation implements Runnable {
             .addLocal(otherBody.getPosition());
         if (delta.length() != 0) {
           final Vec2 force = new Vec2(delta)
-              .mulLocal((otherBody.getMass() * body.getMass()) / (delta.length() * delta.length()));
+              .mulLocal((otherBody.getMass() * body.getMass() * GRAVITATIONAL_CONSTANT)
+                  / (delta.length() * delta.length()));
           logger.debug(String.format("Force: %s -> %s = %s", body.getPosition(),
               otherBody.getPosition(), force));
           body.applyForceToCenter(force);
@@ -141,11 +142,6 @@ public class Simulation implements Runnable {
           loosingBody = body2;
         }
       }
-      // join the two bodies
-      final DistanceJointDef jointDef = new DistanceJointDef();
-      jointDef.initialize(winningBody, loosingBody, winningBody.getPosition(),
-          loosingBody.getPosition());
-      world.createJoint(jointDef);
       // next
       contact = contact.getNext();
     }

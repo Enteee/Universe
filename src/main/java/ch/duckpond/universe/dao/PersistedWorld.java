@@ -74,6 +74,8 @@ public class PersistedWorld extends PersistedObject<World> {
             case DISTANCE :
               joints.add(new PersistedDistanceJoint((DistanceJoint) i, this, getDatastore()));
               break;
+            case MOUSE :
+              break;
             default :
               throw new RuntimeException(
                   String.format("Joint type: %s not implemented", i.getType()));

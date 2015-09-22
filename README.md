@@ -1,5 +1,7 @@
 # Universe
+
 ## Dependencies
 * JRE >= 1.7
-## Developers
+
+## Developer
 * You must have checkstyle installed!

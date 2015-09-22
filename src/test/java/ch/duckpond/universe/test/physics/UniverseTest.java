@@ -18,8 +18,6 @@ import org.jbox2d.testbed.framework.TestbedController;
 import org.jbox2d.testbed.framework.TestbedFrame;
 import org.jbox2d.testbed.framework.TestbedModel;
 import org.jbox2d.testbed.framework.TestbedPanel;
-import org.jbox2d.testbed.framework.TestbedSetting;
-import org.jbox2d.testbed.framework.TestbedSetting.SettingType;
 import org.jbox2d.testbed.framework.TestbedTest;
 import org.jbox2d.testbed.framework.j2d.TestPanelJ2D;
 import org.mongodb.morphia.Morphia;
@@ -29,11 +27,11 @@ import javax.swing.JFrame;
 public class UniverseTest extends TestbedTest {
 
   private static final float           DENSITY            = 1;
-  private static final int             MASSES_COL_SPACING = 5;
-  private static final int             MASSES_COLS        = 5;
   private static final int             MASSES_RADIUS      = 1;
+  private static final int             MASSES_ROWS        = 10;
+  private static final int             MASSES_COLS        = 10;
   private static final int             MASSES_ROW_SPACING = 5;
-  private static final int             MASSES_ROWS        = 5;
+  private static final int             MASSES_COL_SPACING = 5;
   private static final Morphia         MORPHIA            = new Morphia()
       .mapPackage("ch.duckpond.universe.persisted");
   private static final CachedDatastore DATASTORE          = new CachedDatastore(MORPHIA,
@@ -70,15 +68,15 @@ public class UniverseTest extends TestbedTest {
     // add tests
     // TestList.populateModel(model); // populate the provided testbed tests
     model.addCategory("Universe"); // add a category
-    // add settings for saving / loading
-    model.getSettings().addSetting(new TestbedSetting("Save", SettingType.ENGINE, false));
-    model.getSettings().addSetting(new TestbedSetting("Load", SettingType.ENGINE, false));
     // initialize one test per found world
     DATASTORE.find(PersistedWorld.class).forEach(persitedWorld -> {
       model.addTest(new UniverseTest(persitedWorld));
     });
     // initialize one fresh test
     final World newWorld = new World(new Vec2());
+    // create empty body see:
+    // http://box2d.org/forum/viewtopic.php?f=9&t=10121&p=41351
+    newWorld.createBody(new BodyDef());
     addMasses(newWorld);
     final PersistedWorld newPersistedWorld = new PersistedWorld(newWorld, DATASTORE);
     model.addTest(new UniverseTest(newPersistedWorld));
