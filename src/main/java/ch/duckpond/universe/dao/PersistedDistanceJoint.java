@@ -11,7 +11,7 @@ import org.mongodb.morphia.annotations.Reference;
 /**
  * DAO for {@link PersistedDistanceJoint} TODO: this DAO can not be loaded
  * properly.
- * 
+ *
  * @author ente
  */
 @Entity

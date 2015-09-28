@@ -2,7 +2,9 @@ package ch.duckpond.universe.test.physics;
 
 import ch.duckpond.universe.dao.CachedDatastore;
 import ch.duckpond.universe.dao.PersistedWorld;
+import ch.duckpond.universe.simulation.Globals;
 import ch.duckpond.universe.simulation.Simulation;
+import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import com.mongodb.MongoClient;
 
@@ -26,16 +28,17 @@ import javax.swing.JFrame;
 
 public class UniverseTest extends TestbedTest {
 
-  private static final float           DENSITY            = 1;
-  private static final int             MASSES_RADIUS      = 1;
-  private static final int             MASSES_ROWS        = 10;
-  private static final int             MASSES_COLS        = 10;
-  private static final int             MASSES_ROW_SPACING = 5;
-  private static final int             MASSES_COL_SPACING = 5;
-  private static final Morphia         MORPHIA            = new Morphia()
+  private static final float           MASSES_INITIAL_MASS = 5f;
+  private static final int             MASSES_ROWS         = 5;
+  private static final int             MASSES_COLS         = 5;
+  private static final float           MASSES_ROW_SPACING  = 5f;
+  private static final float           MASSES_COL_SPACING  = 5f;
+  private static final Morphia         MORPHIA             = new Morphia()
       .mapPackage("ch.duckpond.universe.persisted");
-  private static final CachedDatastore DATASTORE          = new CachedDatastore(MORPHIA,
+  private static final CachedDatastore DATASTORE           = new CachedDatastore(MORPHIA,
       new MongoClient(), "test");
+  private static final Logger          LOGGER              = LogManager
+      .getLogger(UniverseTest.class);
 
   /**
    * Add some masses to the world.
@@ -47,15 +50,16 @@ public class UniverseTest extends TestbedTest {
     for (int i = 0; i < MASSES_ROWS; i++) {
       for (int j = 0; j < MASSES_COLS; j++) {
         final CircleShape circleShape = new CircleShape();
-        circleShape.setRadius(MASSES_RADIUS);
+        circleShape.setRadius(BodyUtils.getRadiusFromMass(MASSES_INITIAL_MASS));
         final BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyType.DYNAMIC;
         bodyDef.position.set(MASSES_COL_SPACING * (j % MASSES_COLS),
             MASSES_ROW_SPACING * (i % MASSES_ROWS));
-        bodyDef.angle = (float) ((Math.PI / 4) * i);
+        bodyDef.angle = (float) (Math.PI / 4 * i);
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
-        body.createFixture(circleShape, DENSITY);
+        body.createFixture(circleShape, Globals.DENSITY);
+        LOGGER.debug(String.format("body.getMass() = %s", body.getMass()));
       }
     }
   }
@@ -96,7 +100,7 @@ public class UniverseTest extends TestbedTest {
 
   /**
    * Construct.
-   * 
+   *
    * @param persistedWorld
    *          the {@link PersistedWorld} to construct a test for.
    */

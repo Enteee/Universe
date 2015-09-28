@@ -1,6 +1,7 @@
 package ch.duckpond.universe.utils.box2d;
 
 import ch.duckpond.universe.pojo.BodyDefPojo;
+import ch.duckpond.universe.simulation.Globals;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.common.Vec2;
@@ -97,6 +98,10 @@ public class BodyUtils {
   public static float getEnergy(final Body body) {
     return 0.5f * body.getMass() * body.getLinearVelocity().length()
         * body.getLinearVelocity().length();
+  }
+
+  public static float getRadiusFromMass(final float mass) {
+    return (float) Math.sqrt(mass / (Globals.DENSITY * Math.PI));
   }
 
   private BodyUtils() {
