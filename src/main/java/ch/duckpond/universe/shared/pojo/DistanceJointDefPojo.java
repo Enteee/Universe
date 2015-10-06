@@ -1,4 +1,4 @@
-package ch.duckpond.universe.pojo;
+package ch.duckpond.universe.shared.pojo;
 
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.joints.DistanceJointDef;

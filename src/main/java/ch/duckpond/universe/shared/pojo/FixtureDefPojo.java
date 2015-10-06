@@ -1,4 +1,4 @@
-package ch.duckpond.universe.pojo;
+package ch.duckpond.universe.shared.pojo;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.collision.shapes.Shape;

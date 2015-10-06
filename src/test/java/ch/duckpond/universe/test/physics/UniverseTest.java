@@ -1,9 +1,9 @@
 package ch.duckpond.universe.test.physics;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedWorld;
-import ch.duckpond.universe.simulation.Globals;
-import ch.duckpond.universe.simulation.Simulation;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedWorld;
+import ch.duckpond.universe.shared.simulation.Globals;
+import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import com.mongodb.MongoClient;

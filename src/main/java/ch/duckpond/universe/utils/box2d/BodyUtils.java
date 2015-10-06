@@ -1,7 +1,7 @@
 package ch.duckpond.universe.utils.box2d;
 
-import ch.duckpond.universe.pojo.BodyDefPojo;
-import ch.duckpond.universe.simulation.Globals;
+import ch.duckpond.universe.shared.pojo.BodyDefPojo;
+import ch.duckpond.universe.shared.simulation.Globals;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.common.Vec2;

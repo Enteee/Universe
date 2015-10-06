@@ -1,7 +1,7 @@
-package ch.duckpond.universe.simulation;
+package ch.duckpond.universe.shared.simulation;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedWorld;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedWorld;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import com.mongodb.MongoClient;

@@ -1,6 +1,6 @@
-package ch.duckpond.universe;
+package ch.duckpond.universe.server;
 
-import ch.duckpond.universe.simulation.Simulation;
+import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.test.physics.UniverseTest;
 
 public class Main {

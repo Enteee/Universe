@@ -1,11 +1,11 @@
 package ch.duckpond.universe.test.persistence;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedBody;
-import ch.duckpond.universe.dao.PersistedDistanceJoint;
-import ch.duckpond.universe.dao.PersistedFixture;
-import ch.duckpond.universe.dao.PersistedWorld;
-import ch.duckpond.universe.simulation.Simulation;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedBody;
+import ch.duckpond.universe.server.dao.PersistedDistanceJoint;
+import ch.duckpond.universe.server.dao.PersistedFixture;
+import ch.duckpond.universe.server.dao.PersistedWorld;
+import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.test.utils.TestUtilsBody;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 

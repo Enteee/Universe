@@ -1,7 +1,7 @@
 package ch.duckpond.universe.test.persistence;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedObject;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedObject;
 
 import org.mongodb.morphia.annotations.PrePersist;
 

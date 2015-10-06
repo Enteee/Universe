@@ -1,8 +1,8 @@
 package ch.duckpond.universe.utils.box2d;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedWorld;
-import ch.duckpond.universe.pojo.DistanceJointDefPojo;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedWorld;
+import ch.duckpond.universe.shared.pojo.DistanceJointDefPojo;
 
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.joints.DistanceJoint;

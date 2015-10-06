@@ -1,4 +1,4 @@
-package ch.duckpond.universe.dao;
+package ch.duckpond.universe.server.dao;
 
 import org.bson.types.ObjectId;
 

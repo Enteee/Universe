@@ -1,9 +1,9 @@
 package ch.duckpond.universe.utils.box2d;
 
-import ch.duckpond.universe.dao.CachedDatastore;
-import ch.duckpond.universe.dao.PersistedBody;
-import ch.duckpond.universe.dao.PersistedWorld;
-import ch.duckpond.universe.pojo.JointDefPojo;
+import ch.duckpond.universe.server.dao.CachedDatastore;
+import ch.duckpond.universe.server.dao.PersistedBody;
+import ch.duckpond.universe.server.dao.PersistedWorld;
+import ch.duckpond.universe.shared.pojo.JointDefPojo;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.dynamics.joints.Joint;

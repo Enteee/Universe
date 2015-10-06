@@ -1,6 +1,6 @@
-package ch.duckpond.universe.dao;
+package ch.duckpond.universe.server.dao;
 
-import ch.duckpond.universe.pojo.DistanceJointDefPojo;
+import ch.duckpond.universe.shared.pojo.DistanceJointDefPojo;
 import ch.duckpond.universe.utils.box2d.DistanceJointUtils;
 
 import org.jbox2d.dynamics.joints.DistanceJoint;

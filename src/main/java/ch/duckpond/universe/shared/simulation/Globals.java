@@ -1,4 +1,4 @@
-package ch.duckpond.universe.simulation;
+package ch.duckpond.universe.shared.simulation;
 
 /**
  * Global variables.

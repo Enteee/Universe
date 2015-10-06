@@ -1,6 +1,6 @@
-package ch.duckpond.universe.dao;
+package ch.duckpond.universe.server.dao;
 
-import ch.duckpond.universe.pojo.BodyDefPojo;
+import ch.duckpond.universe.shared.pojo.BodyDefPojo;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 import org.jbox2d.dynamics.Body;

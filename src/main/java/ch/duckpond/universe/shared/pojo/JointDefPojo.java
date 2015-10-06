@@ -1,6 +1,6 @@
-package ch.duckpond.universe.pojo;
+package ch.duckpond.universe.shared.pojo;
 
-import ch.duckpond.universe.dao.PersistedBody;
+import ch.duckpond.universe.server.dao.PersistedBody;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.dynamics.joints.JointDef;

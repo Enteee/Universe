@@ -1,6 +1,6 @@
 package ch.duckpond.universe.utils.box2d;
 
-import ch.duckpond.universe.pojo.FixtureDefPojo;
+import ch.duckpond.universe.shared.pojo.FixtureDefPojo;
 
 import org.bson.types.ObjectId;
 import org.jbox2d.collision.shapes.Shape;

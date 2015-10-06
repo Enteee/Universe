@@ -1,6 +1,6 @@
-package ch.duckpond.universe.dao;
+package ch.duckpond.universe.server.dao;
 
-import ch.duckpond.universe.pojo.FixtureDefPojo;
+import ch.duckpond.universe.shared.pojo.FixtureDefPojo;
 import ch.duckpond.universe.utils.box2d.FixtureUtils;
 
 import org.jbox2d.dynamics.Fixture;
