@@ -19,6 +19,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
@@ -100,17 +101,18 @@ public class Universe extends ApplicationAdapter {
         camera = new OrthographicCamera(200f, 200f * h / (float) w);
         orthoCamera = new OrthographicCamera();
         orthoCamera.setToOrtho(true);
-        //Viewport viewport = new FillViewport(1000, 1000, camera);
         // create frame buffers
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
         neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-        // create shaders
         blurShader = new ShaderProgram(Gdx.files.internal("shaders/blurshader.vert"),
                                        Gdx.files.internal("shaders/blurshader.frag"));
         if (!blurShader.isCompiled()) {
-            Gdx.app.debug(getClass().getName(),
-                          String.format("Shader not compiled: %s", blurShader.getLog()));
+            throw new GdxRuntimeException(String.format("Shader not compiled: %s",
+                                                        blurShader.getLog()));
         }
+        blurShader.setUniformf("dir", 0f, 0f); //direction of blur; nil for now
+        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth()); //size of FBO texture
+        blurShader.setUniformf("radius", 3); //radius of blur
     }
 
     @Override
@@ -128,22 +130,17 @@ public class Universe extends ApplicationAdapter {
         Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // set up shader
-        blurShader.begin();
-        blurShader.setUniformf("dir", 0f, 0f); //direction of blur; nil for now
-        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth()); //size of FBO texture
-        blurShader.setUniformf("radius", neonTargetAFBO.getWidth() * 5); //radius of blur
-
         // set up batch
         batch.begin();
         batch.setProjectionMatrix(camera.combined);
 
         // set up shape renderer
-        shapeRenderer.begin(ShapeType.Filled);
+        shapeRenderer.begin(ShapeType.Line);
         shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.setColor(Color.GRAY);
+        //((ImmediateModeRenderer20)shapeRenderer.getRenderer()).setShader(blurShader);
 
         // draw masses
+        shapeRenderer.setColor(Color.RED);
         for (final Fixture fixture : simulation.getFixtures()) {
             final CircleShape circleShape = (CircleShape) fixture.getShape();
             shapeRenderer.circle(fixture.getBody().getPosition().x,
@@ -159,18 +156,44 @@ public class Universe extends ApplicationAdapter {
             shapeRenderer.line(getMassSpawnPoint(),
                                new Vector2(getMassSpawnPoint()).sub(massSpawnVelocity));
         }
-        blurShader.end();
         shapeRenderer.end();
         batch.end();
         neonTargetAFBO.end();
 
-        //clear the background FBO
+
+        // vertical blur
+        neonTargetBFBO.begin();
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
         batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setShader(blurShader);
+        blurShader.setUniformf("dir", 1f, 0f);
+        blurShader.setUniformf("radius", 3f);
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
+        neonTargetBFBO.end();
+
+        //clear the background FBO
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // horizontal blur
+        batch.begin();
+        batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setShader(blurShader);
+        blurShader.setUniformf("dir", 0f, 1f);
+        blurShader.setUniformf("radius", 3f);
+        batch.draw(neonTargetBFBO.getColorBufferTexture(), 0, 0);
+        batch.end();
+
+        // neon effect
+        batch.begin();
+        batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setShader(null);
+        batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
+        batch.end();
+
         // do a simulation step
         simulation.update();
     }
