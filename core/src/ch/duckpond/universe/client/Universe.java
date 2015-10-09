@@ -4,41 +4,64 @@ import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.input.GestureDetector;
-import com.badlogic.gdx.input.GestureDetector.GestureAdapter;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.test.utils.TestUtilsBody;
 
+/**
+ * The main game class.
+ *
+ * @author ente
+ */
 public class Universe extends ApplicationAdapter {
 
     private Simulation simulation;
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
+    private OrthographicCamera orthoCamera;
     private boolean massSpawning = false;
     private Vector2 massSpawnPoint = new Vector2();
     private Vector2 massSpawnVelocity = new Vector2();
-    private Sprite backgroundSprite;
-    private Texture backgroundTexture;
+    private FrameBuffer neonTargetAFBO;
+    private FrameBuffer neonTargetBFBO;
+    private ShaderProgram blurShader;
 
+    public OrthographicCamera getCamera() {
+        return camera;
+    }
+
+    /**
+     * Spwan the mass which was previousely defined with {@link Universe#setMassSpawnPoint
+     * (Vector2)} and {@link Universe#setMassSpawnVelocity(Vector2)}
+     */
+    public void spawnMass() {
+        if (isMassSpawning()) {
+            simulation.spawnMass((int) massSpawnPoint.x,
+                                 (int) massSpawnPoint.y,
+                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom,
+                                 massSpawnVelocity);
+            setMassSpawnVelocity(new Vector2());
+            setMassSpawning(false);
+        }
+    }
 
     public boolean isMassSpawning() {
         return massSpawning;
@@ -48,39 +71,8 @@ public class Universe extends ApplicationAdapter {
         this.massSpawning = massSpawning;
     }
 
-    public Vector2 getMassSpawnPoint() {
-        return new Vector2(massSpawnPoint);
-    }
-
-    public void setMassSpawnPoint(Vector2 massSpawnPoint) {
-        this.massSpawnPoint = new Vector2(massSpawnPoint);
-        setMassSpawnVelocity(new Vector2());
-        setMassSpawning(true);
-    }
-
-    public Vector2 getMassSpawnVelocity() {
-        return new Vector2(massSpawnVelocity);
-    }
-
     public void setMassSpawnVelocity(Vector2 massSpawnVelocity) {
         this.massSpawnVelocity = new Vector2(massSpawnVelocity);
-    }
-
-    public OrthographicCamera getCamera() {
-        return camera;
-    }
-
-    public void spawnMass() {
-        if (isMassSpawning()) {
-            simulation.spawnMass(
-                    (int) massSpawnPoint.x,
-                    (int) massSpawnPoint.y,
-                    Globals.MASS_DEFAULT_RADIUS * camera.zoom,
-                    getMassSpawnVelocity()
-            );
-            setMassSpawnVelocity(new Vector2());
-            setMassSpawning(false);
-        }
     }
 
     @Override
@@ -104,56 +96,117 @@ public class Universe extends ApplicationAdapter {
         // set up rendering
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        final float w = Gdx.graphics.getWidth();
-        final float h = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera(w, h);
-        camera.update();
-        // load sprites
-        backgroundTexture= new Texture(Gdx.files.internal("data/Grid.png"));
-        backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        backgroundSprite = new Sprite(backgroundTexture);
+        final int w = Gdx.graphics.getWidth();
+        final int h = Gdx.graphics.getHeight();
+        camera = new OrthographicCamera(200f, 200f * h / (float) w);
+        orthoCamera = new OrthographicCamera();
+        orthoCamera.setToOrtho(true);
+        // create frame buffers
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
+        neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
+        blurShader = new ShaderProgram(Gdx.files.internal("shaders/blurshader.vert"),
+                                       Gdx.files.internal("shaders/blurshader.frag"));
+        if (!blurShader.isCompiled()) {
+            throw new GdxRuntimeException(String.format("Shader not compiled: %s",
+                                                        blurShader.getLog()));
+        }
+        blurShader.setUniformf("dir", 0f, 0f); //direction of blur; nil for now
+        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth()); //size of FBO texture
+        blurShader.setUniformf("radius", 3); //radius of blur
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        orthoCamera.setToOrtho(true);
     }
 
     @Override
     public void render() {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
+
+        // bind the neonTargetAFBO
+        neonTargetAFBO.begin();
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         // set up batch
         batch.begin();
         batch.setProjectionMatrix(camera.combined);
+
         // set up shape renderer
         shapeRenderer.begin(ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
-        // draw background
-        batch.draw(
-                backgroundTexture,
-                camera.position.x - camera.viewportWidth / 2,
-                camera.position.y - camera.viewportHeight / 2,
-                camera.viewportWidth,
-                camera.viewportHeight,
-                0,0,
-                1,1
-        );
+        //((ImmediateModeRenderer20)shapeRenderer.getRenderer()).setShader(blurShader);
+
         // draw masses
-        shapeRenderer.setColor(Color.GRAY);
+        shapeRenderer.setColor(new Color(1f, 0f, 0f, 1f));
         for (final Fixture fixture : simulation.getFixtures()) {
             final CircleShape circleShape = (CircleShape) fixture.getShape();
-            shapeRenderer.circle(fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, circleShape.getRadius());
-            shapeRenderer.line(new Vector2(), circleShape.getPosition());
+            shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                 fixture.getBody().getPosition().y,
+                                 circleShape.getRadius());
         }
+        shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
         // draw spaning mass
         if (isMassSpawning()) {
-            shapeRenderer.circle(
-                    massSpawnPoint.x,
-                    massSpawnPoint.y,
-                    Globals.MASS_DEFAULT_RADIUS * camera.zoom
-            );
+            shapeRenderer.circle(massSpawnPoint.x,
+                                 massSpawnPoint.y,
+                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom);
             shapeRenderer.line(getMassSpawnPoint(),
-                               new Vector2(getMassSpawnPoint()).sub(getMassSpawnVelocity())
-            );
+                               new Vector2(getMassSpawnPoint()).sub(massSpawnVelocity));
         }
-        batch.end();
         shapeRenderer.end();
+        batch.end();
+        neonTargetAFBO.end();
+
+
+        // vertical blur
+        neonTargetBFBO.begin();
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+        batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setShader(blurShader);
+        blurShader.setUniformf("dir", 1f, 0f);
+        blurShader.setUniformf("radius", 3f);
+        batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
+        batch.end();
+        neonTargetBFBO.end();
+
+        //clear the background FBO
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // horizontal blur
+        batch.begin();
+        batch.setProjectionMatrix(orthoCamera.combined);
+        //batch.setShader(blurShader);
+        batch.setShader(null);
+        blurShader.setUniformf("dir", 0f, 1f);
+        blurShader.setUniformf("radius", 3f);
+        batch.draw(neonTargetBFBO.getColorBufferTexture(), 0, 0);
+        batch.end();
+
+        // neon effect
+        batch.begin();
+        batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setShader(null);
+        //batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
+        batch.end();
+
+        // do a simulation step
         simulation.update();
     }
+
+    public Vector2 getMassSpawnPoint() {
+        return new Vector2(massSpawnPoint);
+    }
+
+    public void setMassSpawnPoint(Vector2 massSpawnPoint) {
+        this.massSpawnPoint = new Vector2(massSpawnPoint);
+        setMassSpawnVelocity(new Vector2());
+        setMassSpawning(true);
+    }
+
 }
