@@ -43,6 +43,7 @@ public class Universe extends ApplicationAdapter {
     private FrameBuffer neonTargetAFBO;
     private FrameBuffer neonTargetBFBO;
     private ShaderProgram blurShader;
+    private final static float BLUR_RADIUS = 10f;
 
     public OrthographicCamera getCamera() {
         return camera;
@@ -110,9 +111,6 @@ public class Universe extends ApplicationAdapter {
             throw new GdxRuntimeException(String.format("Shader not compiled: %s",
                                                         blurShader.getLog()));
         }
-        blurShader.setUniformf("dir", 0f, 0f); //direction of blur; nil for now
-        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth()); //size of FBO texture
-        blurShader.setUniformf("radius", 3); //radius of blur
     }
 
     @Override
@@ -120,6 +118,7 @@ public class Universe extends ApplicationAdapter {
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         orthoCamera.setToOrtho(true);
+        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth());
     }
 
     @Override
@@ -127,7 +126,7 @@ public class Universe extends ApplicationAdapter {
 
         // bind the neonTargetAFBO
         neonTargetAFBO.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // set up batch
@@ -137,7 +136,6 @@ public class Universe extends ApplicationAdapter {
         // set up shape renderer
         shapeRenderer.begin(ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
-        //((ImmediateModeRenderer20)shapeRenderer.getRenderer()).setShader(blurShader);
 
         // draw masses
         shapeRenderer.setColor(new Color(1f, 0f, 0f, 1f));
@@ -160,31 +158,31 @@ public class Universe extends ApplicationAdapter {
         batch.end();
         neonTargetAFBO.end();
 
-
-        // vertical blur
+        // horizontal blur
         neonTargetBFBO.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
         batch.setProjectionMatrix(orthoCamera.combined);
         batch.setShader(blurShader);
         blurShader.setUniformf("dir", 1f, 0f);
-        blurShader.setUniformf("radius", 3f);
+        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth());
+        blurShader.setUniformf("radius", BLUR_RADIUS);
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
         neonTargetBFBO.end();
 
         //clear the background FBO
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // horizontal blur
+        // vertical blur
         batch.begin();
         batch.setProjectionMatrix(orthoCamera.combined);
-        //batch.setShader(blurShader);
-        batch.setShader(null);
+        batch.setShader(blurShader);
         blurShader.setUniformf("dir", 0f, 1f);
-        blurShader.setUniformf("radius", 3f);
+        blurShader.setUniformf("resolution", neonTargetBFBO.getHeight());
+        blurShader.setUniformf("radius", BLUR_RADIUS);
         batch.draw(neonTargetBFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 
@@ -192,7 +190,7 @@ public class Universe extends ApplicationAdapter {
         batch.begin();
         batch.setProjectionMatrix(orthoCamera.combined);
         batch.setShader(null);
-        //batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
+        batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 
         // do a simulation step

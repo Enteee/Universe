@@ -2,8 +2,6 @@
 varying vec4 v_color;
 varying vec2 v_texCoords;
 
-attribute vec2 f_position;
-
 //declare uniforms
 uniform sampler2D u_texture;
 uniform float resolution;
