@@ -10,11 +10,11 @@ import java.util.Random;
 
 public class TestUtilsBody {
 
-    private static final float  MAX_DENSITY = 10;
+    private static final float MAX_DENSITY = 10;
     private static final float MAX_RADIUS = 1;
-    private static final float  MAX_X       = 50;
-    private static final float  MAX_Y       = 50;
-    private static final Random RANDOM      = new Random();
+    private static final float MAX_X = 50;
+    private static final float MAX_Y = 50;
+    private static final Random RANDOM = new Random();
 
     private TestUtilsBody() {
     }
@@ -24,7 +24,8 @@ public class TestUtilsBody {
         circleShape.setRadius(MAX_RADIUS * RANDOM.nextFloat());
         final BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyType.DynamicBody;
-        bodyDef.position.set((MAX_X * 2 * RANDOM.nextFloat()) - MAX_X, (MAX_Y * 2 * RANDOM.nextFloat()) - MAX_Y);
+        bodyDef.position.set((MAX_X * 2 * RANDOM.nextFloat()) - MAX_X,
+                             (MAX_Y * 2 * RANDOM.nextFloat()) - MAX_Y);
         bodyDef.angle = (float) (Math.PI * 2 * RANDOM.nextFloat());
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);

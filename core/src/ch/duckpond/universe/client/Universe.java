@@ -32,6 +32,7 @@ import ch.duckpond.universe.test.utils.TestUtilsBody;
  */
 public class Universe extends ApplicationAdapter {
 
+    private final static float BLUR_RADIUS = 3f;
     private Simulation simulation;
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -44,7 +45,6 @@ public class Universe extends ApplicationAdapter {
     private FrameBuffer neonTargetBFBO;
     private ShaderProgram blurShader;
     private ShaderProgram glowShader;
-    private final static float BLUR_RADIUS = 3f;
 
     public OrthographicCamera getCamera() {
         return camera;
@@ -57,9 +57,9 @@ public class Universe extends ApplicationAdapter {
     public void spawnMass() {
         if (isMassSpawning()) {
             simulation.spawnMass((int) massSpawnPoint.x,
-                    (int) massSpawnPoint.y,
-                    Globals.MASS_DEFAULT_RADIUS * camera.zoom,
-                    massSpawnVelocity);
+                                 (int) massSpawnPoint.y,
+                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom,
+                                 massSpawnVelocity);
             setMassSpawnVelocity(new Vector2());
             setMassSpawning(false);
         }
@@ -106,21 +106,11 @@ public class Universe extends ApplicationAdapter {
         // create frame buffers
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
         neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-        blurShader = new ShaderProgram(
-                Gdx.files.internal("shaders/passthrough.vert"),
-                Gdx.files.internal("shaders/blurshader.frag")
-        );
-        if (!blurShader.isCompiled()) {
-            throw new GdxRuntimeException(String.format("Shader not compiled: %s",
-                    blurShader.getLog()));
-        }
-        glowShader = new ShaderProgram(
-                Gdx.files.internal("shaders/passthrough.vert"),
-                Gdx.files.internal("shaders/glowshader.frag")
-        );
+        glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
+                                       Gdx.files.internal("shaders/glowshader.frag"));
         if (!glowShader.isCompiled()) {
             throw new GdxRuntimeException(String.format("Shader not compiled: %s",
-                    glowShader.getLog()));
+                                                        glowShader.getLog()));
         }
     }
 
@@ -129,7 +119,6 @@ public class Universe extends ApplicationAdapter {
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         orthoCamera.setToOrtho(true);
-        blurShader.setUniformf("resolution", neonTargetAFBO.getWidth());
     }
 
     @Override
@@ -137,49 +126,65 @@ public class Universe extends ApplicationAdapter {
 
         // bind the neonTargetAFBO
         neonTargetAFBO.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // set up batch
-        batch.begin();
+        // set up projection
         batch.setProjectionMatrix(camera.combined);
-
-        // set up shape renderer
-        shapeRenderer.begin(ShapeType.Line);
         shapeRenderer.setProjectionMatrix(camera.combined);
 
-        // draw masses
-        shapeRenderer.setColor(new Color(1f, 0f, 0f, 1f));
+        // draw masses backgrounds
         for (final Fixture fixture : simulation.getFixtures()) {
             final CircleShape circleShape = (CircleShape) fixture.getShape();
+            shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
+
             shapeRenderer.circle(fixture.getBody().getPosition().x,
-                    fixture.getBody().getPosition().y,
-                    circleShape.getRadius());
+                                 fixture.getBody().getPosition().y,
+                                 circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f);
+
+            shapeRenderer.end();
         }
-        shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
+        // draw massess
+        for (final Fixture fixture : simulation.getFixtures()) {
+            final CircleShape circleShape = (CircleShape) fixture.getShape();
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(new Color(1f, 0f, 0f, 1f));
+            shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                 fixture.getBody().getPosition().y,
+                                 circleShape.getRadius());
+            shapeRenderer.end();
+        }
         // draw spaning mass
+
         if (isMassSpawning()) {
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
             shapeRenderer.circle(massSpawnPoint.x,
-                    massSpawnPoint.y,
-                    Globals.MASS_DEFAULT_RADIUS * camera.zoom);
+                                 massSpawnPoint.y,
+                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom);
             shapeRenderer.line(getMassSpawnPoint(),
-                    new Vector2(getMassSpawnPoint()).sub(massSpawnVelocity));
+                               new Vector2(getMassSpawnPoint()).sub(massSpawnVelocity));
+            shapeRenderer.end();
         }
+        shapeRenderer.begin(ShapeType.Line);
+        shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
+        shapeRenderer.x(0, 0, Globals.MASS_DEFAULT_RADIUS * camera.zoom);
         shapeRenderer.end();
-        batch.end();
+
         neonTargetAFBO.end();
 
         //clear the background FBO
-        Gdx.gl.glClearColor(0.0f, 0.0f, 0.0f, 1f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
         batch.setProjectionMatrix(orthoCamera.combined);
         batch.setShader(glowShader);
         glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
-        glowShader.setUniformi("samples", 15);
-        glowShader.setUniformf("quality", 1.5f);
-        glowShader.setUniformf("intensity", 4f);
+        glowShader.setUniformi("samples", Globals.GLOW_SAMPLES);
+        glowShader.setUniformf("quality", Globals.GLOW_QUALITY);
+        glowShader.setUniformf("intensity", Globals.GLOW_INTENSITY);
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 

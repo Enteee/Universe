@@ -32,9 +32,10 @@ class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
     public boolean pan(float x, float y, float deltaX, float deltaY) {
         if (!universe.isMassSpawning()) {
             // move camera
-            universe.getCamera().translate(new Vector3(-deltaX,
-                                                       deltaY,
-                                                       0).scl(universe.getCamera().zoom));
+            Vector3 move = universe.getCamera().unproject(new Vector3());
+            Vector3 deltaMove = universe.getCamera().unproject(new Vector3(deltaX, deltaY, 0));
+            move.sub(deltaMove);
+            universe.getCamera().translate(move);
             universe.getCamera().update();
         } else {
             // set mass spawn velocity
@@ -62,6 +63,7 @@ class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
         universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + (lastDistance - distance) * Globals.CAMERA_ZOOM_FACTOR,
                                                     Globals.CAMERA_ZOOM_MIN,
                                                     Globals.CAMERA_ZOOM_MAX);
+        universe.getCamera().update();
         lastDistance = distance;
         lastInitialDistance = initialDistance;
         return true;
