@@ -137,12 +137,16 @@ public class Universe extends ApplicationAdapter {
         for (final Fixture fixture : simulation.getFixtures()) {
             final CircleShape circleShape = (CircleShape) fixture.getShape();
             shapeRenderer.begin(ShapeType.Filled);
+            // outer glow border
             shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
-
             shapeRenderer.circle(fixture.getBody().getPosition().x,
                                  fixture.getBody().getPosition().y,
                                  circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f);
-
+            // punch out inner glow border
+            shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
+            shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                 fixture.getBody().getPosition().y,
+                                 circleShape.getRadius() - Globals.GLOW_SAMPLES / 2f);
             shapeRenderer.end();
         }
         // draw massess
@@ -155,8 +159,7 @@ public class Universe extends ApplicationAdapter {
                                  circleShape.getRadius());
             shapeRenderer.end();
         }
-        // draw spaning mass
-
+        // draw spawning mass
         if (isMassSpawning()) {
             shapeRenderer.begin(ShapeType.Line);
             shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));

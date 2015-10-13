@@ -85,18 +85,13 @@ class UniverseInputProcessor extends InputAdapter {
             return false;
         }
         universe.getCamera().translate(new Vector3(lastMousePosWorld).sub(universe.getCamera().position));
-        universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + amount,
+        universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + amount * Globals.CAMERA_ZOOM_FACTOR_INPUT,
                                                     Globals.CAMERA_ZOOM_MIN,
                                                     Globals.CAMERA_ZOOM_MAX);
 
         universe.getCamera().update();
         final Vector3 screenMousePosUnprojected = universe.getCamera().unproject(new Vector3(
                 lastMousePosScreen));
-        Gdx.app.debug(getClass().getName(),
-                      String.format("lmp: %s, campos: %s , smp: %s",
-                                    lastMousePosWorld,
-                                    universe.getCamera().position,
-                                    screenMousePosUnprojected));
         universe.getCamera().translate(new Vector3(lastMousePosWorld).sub(screenMousePosUnprojected));
         universe.getCamera().update();
         return true;

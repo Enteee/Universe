@@ -60,7 +60,7 @@ class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
         if (lastInitialDistance != initialDistance) {
             lastDistance = distance;
         }
-        universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + (lastDistance - distance) * Globals.CAMERA_ZOOM_FACTOR,
+        universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + (lastDistance - distance) * Globals.CAMERA_ZOOM_FACTOR_GESTURE,
                                                     Globals.CAMERA_ZOOM_MIN,
                                                     Globals.CAMERA_ZOOM_MAX);
         universe.getCamera().update();
