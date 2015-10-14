@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
@@ -42,9 +43,8 @@ public class Universe extends ApplicationAdapter {
     private Vector2 massSpawnPoint = new Vector2();
     private Vector2 massSpawnVelocity = new Vector2();
     private FrameBuffer neonTargetAFBO;
-    private FrameBuffer neonTargetBFBO;
-    private ShaderProgram blurShader;
     private ShaderProgram glowShader;
+    private Fixture selectedFixture;
 
     public OrthographicCamera getCamera() {
         return camera;
@@ -61,7 +61,7 @@ public class Universe extends ApplicationAdapter {
                                  Globals.MASS_DEFAULT_RADIUS * camera.zoom,
                                  massSpawnVelocity);
             setMassSpawnVelocity(new Vector2());
-            setMassSpawning(false);
+            massSpawning = false;
         }
     }
 
@@ -69,12 +69,33 @@ public class Universe extends ApplicationAdapter {
         return massSpawning;
     }
 
-    public void setMassSpawning(boolean massSpawning) {
-        this.massSpawning = massSpawning;
-    }
-
+    /**
+     * Sets the velocity of a spawning mass in world coorinates.
+     *
+     * @param massSpawnVelocity velocity in world coordinates
+     */
     public void setMassSpawnVelocity(Vector2 massSpawnVelocity) {
         this.massSpawnVelocity = new Vector2(massSpawnVelocity);
+    }
+
+    /**
+     * Select a point on the map.
+     *
+     * @param selectPoint the selected point in world coordinates
+     */
+    public void setSelectPoint(final Vector3 selectPoint) {
+        for (final Fixture fixture : simulation.getFixtures()) {
+            // detect collision
+            final CircleShape circleShape = (CircleShape) fixture.getShape();
+            final Vector3 shapePosition = new Vector3(circleShape.getPosition().x,
+                                                      circleShape.getPosition().y,
+                                                      0f);
+            // fixture selected?
+            if (shapePosition.sub(selectPoint).len() < circleShape.getRadius()) {
+                selectedFixture = fixture;
+                break;
+            }
+        }
     }
 
     @Override
@@ -105,7 +126,6 @@ public class Universe extends ApplicationAdapter {
         orthoCamera.setToOrtho(true);
         // create frame buffers
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-        neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
         glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
                                        Gdx.files.internal("shaders/glowshader.frag"));
         if (!glowShader.isCompiled()) {
@@ -117,7 +137,6 @@ public class Universe extends ApplicationAdapter {
     @Override
     public void resize(int width, int height) {
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
-        neonTargetBFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         orthoCamera.setToOrtho(true);
     }
 
@@ -138,7 +157,7 @@ public class Universe extends ApplicationAdapter {
             final CircleShape circleShape = (CircleShape) fixture.getShape();
             shapeRenderer.begin(ShapeType.Filled);
             // outer glow border
-            shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
+            shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.01f));
             shapeRenderer.circle(fixture.getBody().getPosition().x,
                                  fixture.getBody().getPosition().y,
                                  circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f);
@@ -191,6 +210,14 @@ public class Universe extends ApplicationAdapter {
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 
+        // render circle menu
+        if (selectedFixture != null) {
+            final Vector3 circleMenuPos = new Vector3(selectedFixture.getBody().getPosition().x,
+                                                      selectedFixture.getBody().getPosition().y,
+                                                      0);
+            final float circleMenuRadius = selectedFixture.getShape().getRadius() + Globals.CIRCLE_MENU_BUTTON_MARGIN + Globals.CIRCLE_MENU_BUTTON_SIZE / 2f;
+        }
+
         // do a simulation step
         simulation.update();
     }
@@ -202,7 +229,6 @@ public class Universe extends ApplicationAdapter {
     public void setMassSpawnPoint(Vector2 massSpawnPoint) {
         this.massSpawnPoint = new Vector2(massSpawnPoint);
         setMassSpawnVelocity(new Vector2());
-        setMassSpawning(true);
+        massSpawning = true;
     }
-
 }

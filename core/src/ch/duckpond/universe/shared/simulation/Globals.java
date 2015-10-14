@@ -16,6 +16,9 @@ public class Globals {
     public static final int GLOW_SAMPLES = 5;
     public static final float GLOW_QUALITY = 1.5f;
     public static final float GLOW_INTENSITY = 5f;
+    // circle menu
+    public static final float CIRCLE_MENU_BUTTON_SIZE = 2;
+    public static final float CIRCLE_MENU_BUTTON_MARGIN = 1;
 
     private Globals() {
     }
