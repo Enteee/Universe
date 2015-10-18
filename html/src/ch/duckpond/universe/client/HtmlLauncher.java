@@ -13,6 +13,6 @@ public class HtmlLauncher extends GwtApplication {
 
         @Override
         public ApplicationListener getApplicationListener () {
-                return new Universe();
+                return Universe.getInstance();
         }
 }

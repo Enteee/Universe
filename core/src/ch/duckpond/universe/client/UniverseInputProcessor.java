@@ -15,14 +15,8 @@ import ch.duckpond.universe.shared.simulation.Globals;
  * @author ente
  */
 class UniverseInputProcessor extends InputAdapter {
-
-    private final Universe universe;
     private Vector3 lastMousePosScreen = new Vector3();
     private Vector3 lastMousePosWorld = new Vector3();
-
-    UniverseInputProcessor(final Universe universe) {
-        this.universe = universe;
-    }
 
     @Override
     public boolean touchDown(final int screenX, final int screenY, final int pointer, final int button) {
@@ -30,7 +24,8 @@ class UniverseInputProcessor extends InputAdapter {
         Gdx.app.debug(getClass().getName(), String.format("touchDown %s", lastMousePosWorld));
         switch (button) {
             case Input.Buttons.LEFT:
-                universe.setMassSpawnPoint(new Vector2(lastMousePosWorld.x, lastMousePosWorld.y));
+                Universe.getInstance().setMassSpawnPoint(new Vector2(lastMousePosWorld.x,
+                                                                     lastMousePosWorld.y));
                 break;
         }
         return true;
@@ -42,31 +37,33 @@ class UniverseInputProcessor extends InputAdapter {
 
     private void setLastMousePosScreen(final Vector3 lastMousePosScreen) {
         this.lastMousePosScreen = new Vector3(lastMousePosScreen);
-        lastMousePosWorld = universe.getCamera().unproject(new Vector3(lastMousePosScreen));
+        lastMousePosWorld = Universe.getInstance().getCamera().unproject(new Vector3(
+                lastMousePosScreen));
     }
 
     @Override
     public boolean touchUp(final int screenX, final int screenY, final int pointer, final int button) {
         setLastMousePosScreen(screenX, screenY);
-        universe.spawnMass();
+        Universe.getInstance().spawnMass();
         return true;
     }
 
     @Override
     public boolean touchDragged(final int screenX, final int screenY, final int pointer) {
-        final Vector3 dragPointWorld = universe.getCamera().unproject(new Vector3(screenX,
+        final Vector3 dragPointWorld = Universe.getInstance().getCamera().unproject(new Vector3(
+                screenX,
                                                                                   screenY,
                                                                                   0));
         Gdx.app.debug(getClass().getName(), String.format("touchDragged: %s", dragPointWorld));
-        if (!universe.isMassSpawning()) {
+        if (!Universe.getInstance().isMassSpawning()) {
             // move camera
             final Vector3 dragMove = new Vector3(lastMousePosWorld).sub(dragPointWorld);
-            universe.getCamera().translate(dragMove);
-            universe.getCamera().update();
+            Universe.getInstance().getCamera().translate(dragMove);
+            Universe.getInstance().getCamera().update();
         } else {
             // set spawn velocity
-            universe.setMassSpawnVelocity(new Vector2(universe.getMassSpawnPoint().x - dragPointWorld.x,
-                                                      universe.getMassSpawnPoint().y - dragPointWorld.y));
+            Universe.getInstance().setMassSpawnVelocity(new Vector2(Universe.getInstance().getMassSpawnPoint().x - dragPointWorld.x,
+                                                                    Universe.getInstance().getMassSpawnPoint().y - dragPointWorld.y));
         }
         setLastMousePosScreen(screenX, screenY);
         return true;
@@ -81,19 +78,20 @@ class UniverseInputProcessor extends InputAdapter {
 
     @Override
     public boolean scrolled(final int amount) {
-        if (universe.isMassSpawning()) {
+        if (Universe.getInstance().isMassSpawning()) {
             return false;
         }
-        universe.getCamera().translate(new Vector3(lastMousePosWorld).sub(universe.getCamera().position));
-        universe.getCamera().zoom = MathUtils.clamp(universe.getCamera().zoom + amount * Globals.CAMERA_ZOOM_FACTOR_INPUT,
+        Universe.getInstance().getCamera().translate(new Vector3(lastMousePosWorld).sub(Universe.getInstance().getCamera().position));
+        Universe.getInstance().getCamera().zoom = MathUtils.clamp(Universe.getInstance().getCamera().zoom + amount * Globals.CAMERA_ZOOM_FACTOR_INPUT,
                                                     Globals.CAMERA_ZOOM_MIN,
                                                     Globals.CAMERA_ZOOM_MAX);
 
-        universe.getCamera().update();
-        final Vector3 screenMousePosUnprojected = universe.getCamera().unproject(new Vector3(
+        Universe.getInstance().getCamera().update();
+        final Vector3 screenMousePosUnprojected = Universe.getInstance().getCamera().unproject(new Vector3(
                 lastMousePosScreen));
-        universe.getCamera().translate(new Vector3(lastMousePosWorld).sub(screenMousePosUnprojected));
-        universe.getCamera().update();
+        Universe.getInstance().getCamera().translate(new Vector3(lastMousePosWorld).sub(
+                screenMousePosUnprojected));
+        Universe.getInstance().getCamera().update();
         return true;
     }
 

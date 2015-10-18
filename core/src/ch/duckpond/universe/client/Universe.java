@@ -22,6 +22,7 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
+import ch.duckpond.universe.client.circlemenu.CircleMenu;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.test.utils.TestUtilsBody;
@@ -33,7 +34,8 @@ import ch.duckpond.universe.test.utils.TestUtilsBody;
  */
 public class Universe extends ApplicationAdapter {
 
-    private final static float BLUR_RADIUS = 3f;
+    private static final Universe universe = new Universe();
+
     private Simulation simulation;
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -45,6 +47,14 @@ public class Universe extends ApplicationAdapter {
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
     private Fixture selectedFixture;
+    private CircleMenu circleMenu = new CircleMenu();
+
+    private Universe() {
+    }
+
+    public static Universe getInstance() {
+        return universe;
+    }
 
     public OrthographicCamera getCamera() {
         return camera;
@@ -104,9 +114,9 @@ public class Universe extends ApplicationAdapter {
         Gdx.app.setLogLevel(Application.LOG_DEBUG);
         InputMultiplexer inputMultiplexer = new InputMultiplexer();
         if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor(this)));
+            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor()));
         } else {
-            inputMultiplexer.addProcessor(new UniverseInputProcessor(this));
+            inputMultiplexer.addProcessor(new UniverseInputProcessor());
         }
         Gdx.input.setInputProcessor(inputMultiplexer);
         // simulation set up
@@ -178,6 +188,8 @@ public class Universe extends ApplicationAdapter {
                                  circleShape.getRadius());
             shapeRenderer.end();
         }
+        // render the circle menu
+        circleMenu.render(camera);
         // draw spawning mass
         if (isMassSpawning()) {
             shapeRenderer.begin(ShapeType.Line);
