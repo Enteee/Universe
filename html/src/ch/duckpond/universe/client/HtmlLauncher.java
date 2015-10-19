@@ -6,13 +6,13 @@ import com.badlogic.gdx.backends.gwt.GwtApplicationConfiguration;
 
 public class HtmlLauncher extends GwtApplication {
 
-        @Override
-        public GwtApplicationConfiguration getConfig () {
-                return new GwtApplicationConfiguration(480, 320);
-        }
+    @Override
+    public GwtApplicationConfiguration getConfig() {
+        return new GwtApplicationConfiguration(480, 320);
+    }
 
-        @Override
-        public ApplicationListener getApplicationListener () {
-                return Universe.getInstance();
-        }
+    @Override
+    public ApplicationListener getApplicationListener() {
+        return Universe.getInstance();
+    }
 }

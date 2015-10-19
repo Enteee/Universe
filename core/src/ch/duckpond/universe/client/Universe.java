@@ -45,13 +45,24 @@ public class Universe extends ApplicationAdapter {
     private Vector2 massSpawnVelocity = new Vector2();
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
-    private Fixture selectedFixture;
+    /**
+     * Body on which to center the view.
+     */
+    private Body centeredBody;
 
     private Universe() {
     }
 
     public static Universe getInstance() {
         return universe;
+    }
+
+    public Body getCenteredBody() {
+        return centeredBody;
+    }
+
+    public void setCenteredBody(Body centeredBody) {
+        this.centeredBody = centeredBody;
     }
 
     public Player getThisPlayer() {
@@ -94,23 +105,24 @@ public class Universe extends ApplicationAdapter {
      * Select a point on the map.
      *
      * @param selectPoint the selected point in world coordinates
+     * @return {@code true} if something was selected, {@code false} otherwise
      */
-    public void setSelectPoint(final Vector3 selectPoint) {
+    public boolean setSelectPoint(final Vector3 selectPoint) {
         for (final Body body : simulation.getBodies()) {
-            final Mass mass = (Mass) body.getUserData();
+            final Vector3 bodyPosition = new Vector3(body.getPosition().x,
+                                                     body.getPosition().y,
+                                                     0f);
             for (final Fixture fixture : body.getFixtureList()) {
                 // detect collision
                 final CircleShape circleShape = (CircleShape) fixture.getShape();
-                final Vector3 shapePosition = new Vector3(circleShape.getPosition().x,
-                                                          circleShape.getPosition().y,
-                                                          0f);
-                // mass selected?
-                if (shapePosition.sub(selectPoint).len() < circleShape.getRadius()) {
-                    //mass.clicked()
-                    break;
+                // body selected?
+                if (bodyPosition.sub(selectPoint).len() < circleShape.getRadius()) {
+                    centeredBody = body;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     @Override
@@ -119,9 +131,9 @@ public class Universe extends ApplicationAdapter {
         Gdx.app.setLogLevel(Application.LOG_DEBUG);
         InputMultiplexer inputMultiplexer = new InputMultiplexer();
         if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor()));
+            inputMultiplexer.addProcessor(new GestureDetector(new ch.duckpond.universe.client.input.UniverseGestureProcessor()));
         } else {
-            inputMultiplexer.addProcessor(new UniverseInputProcessor());
+            inputMultiplexer.addProcessor(new ch.duckpond.universe.client.input.UniverseInputProcessor());
         }
         Gdx.input.setInputProcessor(inputMultiplexer);
         // simulation set up
@@ -153,6 +165,15 @@ public class Universe extends ApplicationAdapter {
 
     @Override
     public void render() {
+
+        // center camera on centered body
+        if (centeredBody != null) {
+            final Vector3 centerTranslate = new Vector3(centeredBody.getPosition().x,
+                                                        centeredBody.getPosition().y,
+                                                        0f).sub(camera.position).scl(Globals.CAMERA_CENTER_FACTOR);
+            camera.translate(centerTranslate);
+            camera.update();
+        }
 
         // bind the neonTargetAFBO
         neonTargetAFBO.begin();
@@ -210,14 +231,6 @@ public class Universe extends ApplicationAdapter {
         batch.end();
 
         //drawMasses();
-
-        // render circle menu
-        if (selectedFixture != null) {
-            final Vector3 circleMenuPos = new Vector3(selectedFixture.getBody().getPosition().x,
-                                                      selectedFixture.getBody().getPosition().y,
-                                                      0);
-            final float circleMenuRadius = selectedFixture.getShape().getRadius() + Globals.CIRCLE_MENU_BUTTON_MARGIN + Globals.CIRCLE_MENU_BUTTON_SIZE / 2f;
-        }
 
         // do a simulation step
         simulation.update();

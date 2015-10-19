@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.Camera;
 public interface CircleMenuItem {
     /**
      * Event fired when this item was clicked
-     *
      */
     void clicked(Object attachable);
 

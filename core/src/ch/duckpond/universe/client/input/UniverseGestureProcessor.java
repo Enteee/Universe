@@ -1,10 +1,11 @@
-package ch.duckpond.universe.client;
+package ch.duckpond.universe.client.input;
 
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
+import ch.duckpond.universe.client.Universe;
 import ch.duckpond.universe.shared.simulation.Globals;
 
 /**
@@ -12,7 +13,7 @@ import ch.duckpond.universe.shared.simulation.Globals;
  *
  * @author ente
  */
-class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
+public class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
     private float lastInitialDistance = 0;
     private float lastDistance = 0;
 

@@ -25,6 +25,7 @@ public class Globals {
     public static final float CAMERA_ZOOM_FACTOR_INPUT = 0.1f;
     public static final float CAMERA_ZOOM_MAX = 5;
     public static final float CAMERA_ZOOM_MIN = 0.5f;
+    public static final float CAMERA_CENTER_FACTOR = 0.1f;
     /**
      * Glow filter settings
      */
