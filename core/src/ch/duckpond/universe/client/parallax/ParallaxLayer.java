@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client;
+package ch.duckpond.universe.client.parallax;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;

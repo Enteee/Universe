@@ -12,9 +12,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 public class CircleMenuItemAdaptor implements CircleMenuItem {
 
     @Override
-    public void clicked(CircleMenuAttachable attachable) {
+    public void clicked(Object attachable) {
         Gdx.app.debug(getClass().getName(), String.format("clicked on %s", attachable));
     }
+
 
     @Override
     public void render(final Camera camera, final float radius) {

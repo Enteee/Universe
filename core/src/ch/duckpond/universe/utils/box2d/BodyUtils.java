@@ -6,6 +6,9 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import ch.duckpond.universe.shared.simulation.Globals;
 
 public class BodyUtils {
+
+    private BodyUtils() {
+    }
     
     /**
      * Clones the {@link BodyDef} from the given @{link Body}.
@@ -44,9 +47,6 @@ public class BodyUtils {
     }
     
     public static float getRadiusFromMass(final float mass) {
-        return (float) Math.sqrt(mass / (Globals.DENSITY * Math.PI));
-    }
-    
-    private BodyUtils() {
+        return (float) Math.sqrt(mass / (Globals.MASS_DENSITY * Math.PI));
     }
 }

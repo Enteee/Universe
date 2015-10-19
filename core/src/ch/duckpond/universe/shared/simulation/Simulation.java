@@ -1,11 +1,5 @@
 package ch.duckpond.universe.shared.simulation;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -15,60 +9,25 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
-import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+import ch.duckpond.universe.client.Mass;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
+/**
+ * The universe simulation
+ *
+ * @author ente
+ */
 public class Simulation {
 
-    private static class ContactTuple {
-
-        private final Body winner;
-        private final Body looser;
-
-        protected ContactTuple(final Body body1, final Body body2) {
-            // elect 'winning' body
-            if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
-                winner = body2;
-                looser = body1;
-            } else if (BodyUtils.getEnergy(body1) > BodyUtils.getEnergy(body2)) {
-                winner = body1;
-                looser = body2;
-            } else {
-                // both have the same energy
-                // randomly select one of the bodies as winner
-                if (RANDOM.nextFloat() < 0.5f) {
-                    winner = body2;
-                    looser = body1;
-                } else {
-                    winner = body1;
-                    looser = body2;
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            return String.format("(W:%s L:%s)", getWinner(), getLooser());
-        }
-
-        protected Body getLooser() {
-            return looser;
-        }
-
-        protected Body getWinner() {
-            return winner;
-        }
-
-        protected boolean isDestroyed(final Set<Body> destroyedBodies) {
-            return destroyedBodies.contains(winner) || destroyedBodies.contains(looser);
-        }
-    }
-
-    private static final Random RANDOM = new Random();
     private static final int UPDATE_POSITION_ITERATIONS = 8;
     private static final float UPDATE_TIME_STEP = 1.0f / 60.0f;
     private static final int UPDATE_VELOCITY_ITERATIONS = 10;
@@ -76,7 +35,6 @@ public class Simulation {
     private static final int MAX_GRAVITY_BODIES_PER_UPDATE = 500;
     private final List<ContactTuple> contacts = new LinkedList<ContactTuple>();
     private final World world;
-
     /**
      * Construct.
      */
@@ -102,12 +60,13 @@ public class Simulation {
             }
 
             @Override
-            public void postSolve(final Contact contact, final ContactImpulse impulse) {
+            public void preSolve(final Contact contact, final Manifold oldManifold) {
+                contacts.add(new ContactTuple(contact.getFixtureA().getBody(),
+                                              contact.getFixtureB().getBody()));
             }
 
             @Override
-            public void preSolve(final Contact contact, final Manifold oldManifold) {
-                contacts.add(new ContactTuple(contact.getFixtureA().getBody(), contact.getFixtureB().getBody()));
+            public void postSolve(final Contact contact, final ContactImpulse impulse) {
             }
         });
     }
@@ -116,10 +75,10 @@ public class Simulation {
         return world;
     }
 
-    public Array<Fixture> getFixtures() {
-        final Array<Fixture> fixtures = new Array<Fixture>(world.getFixtureCount());
-        world.getFixtures(fixtures);
-        return fixtures;
+    public Array<Body> getBodies() {
+        final Array<Body> bodies = new Array<Body>(world.getBodyCount());
+        world.getBodies(bodies);
+        return bodies;
     }
 
     /**
@@ -177,14 +136,6 @@ public class Simulation {
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }
 
-    public void spawnMass(final int x, final int y, final float radius, final Vector2 velocity) {
-        spawnMass(
-                new Vector2(x, y),
-                radius,
-                velocity
-        );
-    }
-
     public void spawnMass(final Vector2 position, final float radius, final Vector2 velocity) {
         final CircleShape circleShape = new CircleShape();
         circleShape.setRadius(radius);
@@ -192,9 +143,58 @@ public class Simulation {
         bodyDef.type = BodyType.DynamicBody;
         bodyDef.position.set(position);
         bodyDef.linearVelocity.set(velocity);
-        bodyDef.angle = (float) (Math.PI * 2 * RANDOM.nextFloat());
+        bodyDef.angle = (float) (Math.PI * 2 * Globals.RANDOM.nextFloat());
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
-        body.createFixture(circleShape, Globals.DENSITY);
+        body.setUserData(new Mass());
+        body.createFixture(circleShape, Globals.MASS_DENSITY);
+    }
+
+    public void spawnMass(final int x, final int y, final float radius, final Vector2 velocity) {
+        spawnMass(new Vector2(x, y), radius, velocity);
+    }
+
+    private static class ContactTuple {
+
+        private final Body winner;
+        private final Body looser;
+
+        protected ContactTuple(final Body body1, final Body body2) {
+            // elect 'winning' body
+            if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
+                winner = body2;
+                looser = body1;
+            } else if (BodyUtils.getEnergy(body1) > BodyUtils.getEnergy(body2)) {
+                winner = body1;
+                looser = body2;
+            } else {
+                // both have the same energy
+                // randomly select one of the bodies as winner
+                if (Globals.RANDOM.nextFloat() < 0.5f) {
+                    winner = body2;
+                    looser = body1;
+                } else {
+                    winner = body1;
+                    looser = body2;
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("(W:%s L:%s)", getWinner(), getLooser());
+        }
+
+        protected Body getWinner() {
+            return winner;
+        }
+
+        protected Body getLooser() {
+            return looser;
+        }
+
+        protected boolean isDestroyed(final Set<Body> destroyedBodies) {
+            return destroyedBodies.contains(winner) || destroyedBodies.contains(looser);
+        }
     }
 }

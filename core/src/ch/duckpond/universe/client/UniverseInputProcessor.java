@@ -52,8 +52,8 @@ class UniverseInputProcessor extends InputAdapter {
     public boolean touchDragged(final int screenX, final int screenY, final int pointer) {
         final Vector3 dragPointWorld = Universe.getInstance().getCamera().unproject(new Vector3(
                 screenX,
-                                                                                  screenY,
-                                                                                  0));
+                screenY,
+                0));
         Gdx.app.debug(getClass().getName(), String.format("touchDragged: %s", dragPointWorld));
         if (!Universe.getInstance().isMassSpawning()) {
             // move camera
@@ -83,8 +83,8 @@ class UniverseInputProcessor extends InputAdapter {
         }
         Universe.getInstance().getCamera().translate(new Vector3(lastMousePosWorld).sub(Universe.getInstance().getCamera().position));
         Universe.getInstance().getCamera().zoom = MathUtils.clamp(Universe.getInstance().getCamera().zoom + amount * Globals.CAMERA_ZOOM_FACTOR_INPUT,
-                                                    Globals.CAMERA_ZOOM_MIN,
-                                                    Globals.CAMERA_ZOOM_MAX);
+                                                                  Globals.CAMERA_ZOOM_MIN,
+                                                                  Globals.CAMERA_ZOOM_MAX);
 
         Universe.getInstance().getCamera().update();
         final Vector3 screenMousePosUnprojected = Universe.getInstance().getCamera().unproject(new Vector3(

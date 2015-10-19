@@ -17,15 +17,14 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
-import ch.duckpond.universe.client.circlemenu.CircleMenu;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
-import ch.duckpond.universe.test.utils.TestUtilsBody;
 
 /**
  * The main game class.
@@ -35,7 +34,7 @@ import ch.duckpond.universe.test.utils.TestUtilsBody;
 public class Universe extends ApplicationAdapter {
 
     private static final Universe universe = new Universe();
-
+    private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
     private Simulation simulation;
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -47,13 +46,16 @@ public class Universe extends ApplicationAdapter {
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
     private Fixture selectedFixture;
-    private CircleMenu circleMenu = new CircleMenu();
 
     private Universe() {
     }
 
     public static Universe getInstance() {
         return universe;
+    }
+
+    public Player getThisPlayer() {
+        return thisPlayer;
     }
 
     public OrthographicCamera getCamera() {
@@ -68,7 +70,7 @@ public class Universe extends ApplicationAdapter {
         if (isMassSpawning()) {
             simulation.spawnMass((int) massSpawnPoint.x,
                                  (int) massSpawnPoint.y,
-                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom,
+                                 Globals.MASS_SPAWN_RADIUS * camera.zoom,
                                  massSpawnVelocity);
             setMassSpawnVelocity(new Vector2());
             massSpawning = false;
@@ -94,16 +96,19 @@ public class Universe extends ApplicationAdapter {
      * @param selectPoint the selected point in world coordinates
      */
     public void setSelectPoint(final Vector3 selectPoint) {
-        for (final Fixture fixture : simulation.getFixtures()) {
-            // detect collision
-            final CircleShape circleShape = (CircleShape) fixture.getShape();
-            final Vector3 shapePosition = new Vector3(circleShape.getPosition().x,
-                                                      circleShape.getPosition().y,
-                                                      0f);
-            // fixture selected?
-            if (shapePosition.sub(selectPoint).len() < circleShape.getRadius()) {
-                selectedFixture = fixture;
-                break;
+        for (final Body body : simulation.getBodies()) {
+            final Mass mass = (Mass) body.getUserData();
+            for (final Fixture fixture : body.getFixtureList()) {
+                // detect collision
+                final CircleShape circleShape = (CircleShape) fixture.getShape();
+                final Vector3 shapePosition = new Vector3(circleShape.getPosition().x,
+                                                          circleShape.getPosition().y,
+                                                          0f);
+                // mass selected?
+                if (shapePosition.sub(selectPoint).len() < circleShape.getRadius()) {
+                    //mass.clicked()
+                    break;
+                }
             }
         }
     }
@@ -122,20 +127,16 @@ public class Universe extends ApplicationAdapter {
         // simulation set up
         Box2D.init();
         simulation = new Simulation();
-        // some random bodies
-        for (int i = 0; i < 10; ++i) {
-            TestUtilsBody.randomBody(simulation.getWorld());
-        }
         // set up rendering
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        final int w = Gdx.graphics.getWidth();
-        final int h = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera(200f, 200f * h / (float) w);
+        final int width = Gdx.graphics.getWidth();
+        final int height = Gdx.graphics.getHeight();
+        camera = new OrthographicCamera(200f, 200f * height / (float) width);
         orthoCamera = new OrthographicCamera();
         orthoCamera.setToOrtho(true);
         // create frame buffers
-        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
                                        Gdx.files.internal("shaders/glowshader.frag"));
         if (!glowShader.isCompiled()) {
@@ -158,52 +159,38 @@ public class Universe extends ApplicationAdapter {
         Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // set up projection
-        batch.setProjectionMatrix(camera.combined);
+        // draw masses background
+        shapeRenderer.begin(ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
-
         // draw masses backgrounds
-        for (final Fixture fixture : simulation.getFixtures()) {
-            final CircleShape circleShape = (CircleShape) fixture.getShape();
-            shapeRenderer.begin(ShapeType.Filled);
+        for (final Body body : simulation.getBodies()) {
             // outer glow border
-            shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.01f));
-            shapeRenderer.circle(fixture.getBody().getPosition().x,
-                                 fixture.getBody().getPosition().y,
-                                 circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f);
-            // punch out inner glow border
-            shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
-            shapeRenderer.circle(fixture.getBody().getPosition().x,
-                                 fixture.getBody().getPosition().y,
-                                 circleShape.getRadius() - Globals.GLOW_SAMPLES / 2f);
-            shapeRenderer.end();
+            for (final Fixture fixture : body.getFixtureList()) {
+                final CircleShape circleShape = (CircleShape) fixture.getShape();
+                shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
+                shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                     fixture.getBody().getPosition().y,
+                                     circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
+            }
         }
-        // draw massess
-        for (final Fixture fixture : simulation.getFixtures()) {
-            final CircleShape circleShape = (CircleShape) fixture.getShape();
-            shapeRenderer.begin(ShapeType.Line);
-            shapeRenderer.setColor(new Color(1f, 0f, 0f, 1f));
-            shapeRenderer.circle(fixture.getBody().getPosition().x,
-                                 fixture.getBody().getPosition().y,
-                                 circleShape.getRadius());
-            shapeRenderer.end();
-        }
-        // render the circle menu
-        circleMenu.render(camera);
+        shapeRenderer.end();
+
+        drawMasses();
+
         // draw spawning mass
         if (isMassSpawning()) {
             shapeRenderer.begin(ShapeType.Line);
             shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
             shapeRenderer.circle(massSpawnPoint.x,
                                  massSpawnPoint.y,
-                                 Globals.MASS_DEFAULT_RADIUS * camera.zoom);
+                                 Globals.MASS_SPAWN_RADIUS * camera.zoom);
             shapeRenderer.line(getMassSpawnPoint(),
                                new Vector2(getMassSpawnPoint()).sub(massSpawnVelocity));
             shapeRenderer.end();
         }
         shapeRenderer.begin(ShapeType.Line);
         shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
-        shapeRenderer.x(0, 0, Globals.MASS_DEFAULT_RADIUS * camera.zoom);
+        shapeRenderer.x(0, 0, Globals.MASS_SPAWN_RADIUS * camera.zoom);
         shapeRenderer.end();
 
         neonTargetAFBO.end();
@@ -222,6 +209,8 @@ public class Universe extends ApplicationAdapter {
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 
+        //drawMasses();
+
         // render circle menu
         if (selectedFixture != null) {
             final Vector3 circleMenuPos = new Vector3(selectedFixture.getBody().getPosition().x,
@@ -232,6 +221,33 @@ public class Universe extends ApplicationAdapter {
 
         // do a simulation step
         simulation.update();
+    }
+
+    private void drawMasses() {
+        // draw massess
+        shapeRenderer.begin(ShapeType.Filled);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        for (final Body body : simulation.getBodies()) {
+            shapeRenderer.setColor(((Mass) body.getUserData()).getOwner().getColor());
+            // outer glow border
+            for (final Fixture fixture : body.getFixtureList()) {
+                final CircleShape circleShape = (CircleShape) fixture.getShape();
+                final float innerCircleRadius = circleShape.getRadius() - Globals.MASS_SURFACE_WIDTH;
+                shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                     fixture.getBody().getPosition().y,
+                                     circleShape.getRadius());
+                // punch out inner border
+                shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
+                shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                     fixture.getBody().getPosition().y,
+                                     innerCircleRadius);
+                shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
+                shapeRenderer.circle(fixture.getBody().getPosition().x,
+                                     fixture.getBody().getPosition().y,
+                                     innerCircleRadius - Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
+            }
+        }
+        shapeRenderer.end();
     }
 
     public Vector2 getMassSpawnPoint() {

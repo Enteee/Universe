@@ -11,9 +11,8 @@ public interface CircleMenuItem {
     /**
      * Event fired when this item was clicked
      *
-     * @param attachable where this CircleManuItem was attached
      */
-    void clicked(final CircleMenuAttachable attachable);
+    void clicked(Object attachable);
 
     /**
      * Render this item.
