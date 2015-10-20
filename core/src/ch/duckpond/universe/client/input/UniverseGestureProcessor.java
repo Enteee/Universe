@@ -2,7 +2,6 @@ package ch.duckpond.universe.client.input;
 
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 import ch.duckpond.universe.client.Universe;
@@ -22,7 +21,9 @@ public class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
         final Vector3 massSpawnPoint3 = Universe.getInstance().getCamera().unproject(new Vector3(x,
                                                                                                  y,
                                                                                                  0));
-        Universe.getInstance().setMassSpawnPoint(new Vector2(massSpawnPoint3.x, massSpawnPoint3.y));
+        Universe.getInstance().setMassSpawnPointScreen(new Vector3(massSpawnPoint3.x,
+                                                                   massSpawnPoint3.y,
+                                                                   0));
         return true;
     }
 
@@ -42,8 +43,9 @@ public class UniverseGestureProcessor extends GestureDetector.GestureAdapter {
             final Vector3 panPoint = Universe.getInstance().getCamera().unproject(new Vector3(x,
                                                                                               y,
                                                                                               0));
-            Universe.getInstance().setMassSpawnVelocity(new Vector2(Universe.getInstance().getMassSpawnPoint().x - panPoint.x,
-                                                                    Universe.getInstance().getMassSpawnPoint().y - panPoint.y));
+            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(Universe.getInstance().getMassSpawnPointScreen().x - panPoint.x,
+                                                                          Universe.getInstance().getMassSpawnPointScreen().y - panPoint.y,
+                                                                          0));
         }
         return true;
     }

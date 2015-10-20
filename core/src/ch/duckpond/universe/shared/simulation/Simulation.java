@@ -2,6 +2,7 @@ package ch.duckpond.universe.shared.simulation;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
@@ -94,9 +95,13 @@ public class Simulation {
                 Gdx.app.debug(getClass().toString(), String.format("Contact: %s", i));
                 // first create resulting body
                 final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
-                final Body newBody = spawnMass(collisionResultDef.position,
+                final Body newBody = spawnMass(new Vector3(collisionResultDef.position.x,
+                                                           collisionResultDef.position.y,
+                                                           0),
                                                BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
-                                               collisionResultDef.linearVelocity);
+                                               new Vector3(collisionResultDef.linearVelocity.x,
+                                                           collisionResultDef.linearVelocity.y,
+                                                           0));
                 // destory old bodies
                 world.destroyBody(i.getLooser());
                 destroyedBodies.add(i.getLooser());
@@ -138,23 +143,19 @@ public class Simulation {
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }
 
-    public Body spawnMass(final Vector2 position, final float radius, final Vector2 velocity) {
+    public Body spawnMass(final Vector3 position, final float radius, final Vector3 velocity) {
         final CircleShape circleShape = new CircleShape();
         circleShape.setRadius(radius);
         final BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyType.DynamicBody;
-        bodyDef.position.set(position);
-        bodyDef.linearVelocity.set(velocity);
+        bodyDef.position.set(new Vector2(position.x, position.y));
+        bodyDef.linearVelocity.set(new Vector2(velocity.x, velocity.y));
         bodyDef.angle = (float) (Math.PI * 2 * Globals.RANDOM.nextFloat());
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
         body.setUserData(new Mass());
         body.createFixture(circleShape, Globals.MASS_DENSITY);
         return body;
-    }
-
-    public Body spawnMass(final int x, final int y, final float radius, final Vector2 velocity) {
-        return spawnMass(new Vector2(x, y), radius, velocity);
     }
 
     private static class ContactTuple {

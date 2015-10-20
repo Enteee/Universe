@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 import ch.duckpond.universe.client.Universe;
@@ -29,8 +28,9 @@ public class UniverseInputProcessor extends InputAdapter {
                 // check if clicked on mass
                 massSelected = Universe.getInstance().setSelectPoint(lastMousePosWorld);
                 if (!massSelected) {
-                    Universe.getInstance().setMassSpawnPoint(new Vector2(lastMousePosWorld.x,
-                                                                         lastMousePosWorld.y));
+                    Universe.getInstance().setMassSpawnPointScreen(new Vector3(lastMousePosScreen.x,
+                                                                               lastMousePosScreen.y,
+                                                                               0));
                 }
                 break;
             }
@@ -58,10 +58,9 @@ public class UniverseInputProcessor extends InputAdapter {
 
     @Override
     public boolean touchDragged(final int screenX, final int screenY, final int pointer) {
+        final Vector3 dragPointScreen = new Vector3(screenX, screenY, 0);
         final Vector3 dragPointWorld = Universe.getInstance().getCamera().unproject(new Vector3(
-                screenX,
-                screenY,
-                0));
+                dragPointScreen));
         Gdx.app.debug(getClass().getName(), String.format("touchDragged: %s", dragPointWorld));
         if (!Universe.getInstance().isMassSpawning() && !massSelected) {
             // move camera
@@ -71,10 +70,10 @@ public class UniverseInputProcessor extends InputAdapter {
             Universe.getInstance().setCenteredBody(null);
         } else {
             // set spawn velocity
-            Universe.getInstance().setMassSpawnVelocity(new Vector2(Universe.getInstance().getMassSpawnPoint().x - dragPointWorld.x,
-                                                                    Universe.getInstance().getMassSpawnPoint().y - dragPointWorld.y));
+            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(Universe.getInstance().getMassSpawnPointScreen()).sub(
+                    dragPointScreen));
         }
-        setLastMousePosScreen(screenX, screenY);
+        setLastMousePosScreen(dragPointScreen);
         return true;
     }
 
