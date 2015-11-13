@@ -1,10 +1,8 @@
 package ch.duckpond.universe.client;
 
-import com.badlogic.gdx.Application;
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputMultiplexer;
+import ch.duckpond.universe.shared.simulation.Globals;
+import ch.duckpond.universe.shared.simulation.Simulation;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -21,9 +19,6 @@ import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.utils.GdxRuntimeException;
-
-import ch.duckpond.universe.shared.simulation.Globals;
-import ch.duckpond.universe.shared.simulation.Simulation;
 
 /**
  * The main game class.
@@ -48,6 +43,7 @@ public class Universe extends ApplicationAdapter {
      * Body on which to center the view.
      */
     private Body centeredBody;
+
     private Universe() {
     }
 
@@ -91,7 +87,7 @@ public class Universe extends ApplicationAdapter {
             final Vector3 massSpawnVelocityWorld = camera.unproject(new Vector3(
                     massSpawnVelocityScreen));
             simulation.spawnMass(massSpawnPointWorld,
-                                 Globals.MASS_SPAWN_RADIUS * camera.zoom, massSpawnVelocityWorld);
+                    Globals.MASS_SPAWN_RADIUS * camera.zoom, massSpawnVelocityWorld);
             massSpawnVelocityScreen = new Vector3();
             massSpawning = false;
         }
@@ -119,8 +115,8 @@ public class Universe extends ApplicationAdapter {
     public boolean setSelectPoint(final Vector3 selectPoint) {
         for (final Body body : simulation.getBodies()) {
             final Vector3 bodyPosition = new Vector3(body.getPosition().x,
-                                                     body.getPosition().y,
-                                                     0f);
+                    body.getPosition().y,
+                    0f);
             for (final Fixture fixture : body.getFixtureList()) {
                 // detect collision
                 final CircleShape circleShape = (CircleShape) fixture.getShape();
@@ -159,10 +155,10 @@ public class Universe extends ApplicationAdapter {
         // create frame buffers
         neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
-                                       Gdx.files.internal("shaders/glowshader.frag"));
+                Gdx.files.internal("shaders/glowshader.frag"));
         if (!glowShader.isCompiled()) {
             throw new GdxRuntimeException(String.format("Shader not compiled: %s",
-                                                        glowShader.getLog()));
+                    glowShader.getLog()));
         }
     }
 
@@ -177,9 +173,7 @@ public class Universe extends ApplicationAdapter {
 
         // center camera on centered body
         if (centeredBody != null) {
-            final Vector3 centerTranslate = new Vector3(centeredBody.getPosition().x,
-                                                        centeredBody.getPosition().y,
-                                                        0f).sub(camera.position).scl(Globals.CAMERA_CENTER_FACTOR);
+            final Vector3 centerTranslate = new Vector3(centeredBody.getPosition().x, centeredBody.getPosition().y, 0f).sub(camera.position).scl(Globals.CAMERA_CENTER_FACTOR);
             camera.translate(centerTranslate);
             camera.update();
         }
@@ -199,8 +193,8 @@ public class Universe extends ApplicationAdapter {
                 final CircleShape circleShape = (CircleShape) fixture.getShape();
                 shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
                 shapeRenderer.circle(body.getPosition().x,
-                                     body.getPosition().y,
-                                     circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
+                        body.getPosition().y,
+                        circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
             }
         }
         shapeRenderer.end();
@@ -210,19 +204,18 @@ public class Universe extends ApplicationAdapter {
         // draw spawning mass
         if (isMassSpawning()) {
             final Vector3 massSpawnPointWorld = camera.unproject(new Vector3(massSpawnPointScreen));
-            final Vector3 massSpawnVelocityWorld = camera.unproject(new Vector3(
-                    massSpawnVelocityScreen));
-            final Vector3 cameraPosition = new Vector3(camera.position);
-            camera.position.set(massSpawnPointWorld);
-            camera.update();
+            final Vector3 massSpawnVelocityWorld = camera.unproject(new Vector3(massSpawnVelocityScreen));
+            final Vector3 velocityIndicator = new Vector3(massSpawnPointWorld).add(massSpawnVelocityWorld);
+
+            Gdx.app.debug(getClass().getName(), String.format("massSpawnPointScreen: %s, massSpawnPointWorld: %s", this.massSpawnPointScreen, massSpawnPointWorld));
+            Gdx.app.debug(getClass().getName(), String.format("massSpawnVelocityWorld: %s, velocityIndicator: %s", massSpawnVelocityWorld, velocityIndicator));
+
             shapeRenderer.begin(ShapeType.Line);
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
-            shapeRenderer.circle(0, 0,
-                                 Globals.MASS_SPAWN_RADIUS * camera.zoom);
-            shapeRenderer.line(massSpawnPointWorld, massSpawnVelocityWorld);
-            camera.position.set(cameraPosition);
-            camera.update();
+            shapeRenderer.circle(massSpawnPointWorld.x, massSpawnPointWorld.y, Globals.MASS_SPAWN_RADIUS * camera.zoom);
+            shapeRenderer.line(massSpawnPointWorld, velocityIndicator);
+
             shapeRenderer.end();
         }
         // draw (0,0) refernce
@@ -265,15 +258,15 @@ public class Universe extends ApplicationAdapter {
                 final CircleShape circleShape = (CircleShape) fixture.getShape();
                 final float innerCircleRadius = circleShape.getRadius() - Globals.MASS_SURFACE_WIDTH;
                 shapeRenderer.circle(body.getPosition().x, body.getPosition().y,
-                                     circleShape.getRadius());
+                        circleShape.getRadius());
                 // punch out inner border
                 shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
                 shapeRenderer.circle(body.getPosition().x, body.getPosition().y,
-                                     innerCircleRadius);
+                        innerCircleRadius);
                 shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
                 shapeRenderer.circle(body.getPosition().x,
-                                     body.getPosition().y,
-                                     innerCircleRadius - Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
+                        body.getPosition().y,
+                        innerCircleRadius - Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
             }
         }
         shapeRenderer.end();

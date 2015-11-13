@@ -1,13 +1,12 @@
 package ch.duckpond.universe.client.input;
 
+import ch.duckpond.universe.client.Universe;
+import ch.duckpond.universe.shared.simulation.Globals;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-
-import ch.duckpond.universe.client.Universe;
-import ch.duckpond.universe.shared.simulation.Globals;
 
 /**
  * Universe input processor for non-touch environment.
@@ -29,8 +28,8 @@ public class UniverseInputProcessor extends InputAdapter {
                 massSelected = Universe.getInstance().setSelectPoint(lastMousePosWorld);
                 if (!massSelected) {
                     Universe.getInstance().setMassSpawnPointScreen(new Vector3(lastMousePosScreen.x,
-                                                                               lastMousePosScreen.y,
-                                                                               0));
+                            lastMousePosScreen.y,
+                            0));
                 }
                 break;
             }
@@ -70,8 +69,7 @@ public class UniverseInputProcessor extends InputAdapter {
             Universe.getInstance().setCenteredBody(null);
         } else {
             // set spawn velocity
-            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(Universe.getInstance().getMassSpawnPointScreen()).sub(
-                    dragPointScreen));
+            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(dragPointScreen).sub(Universe.getInstance().getMassSpawnPointScreen()));
         }
         setLastMousePosScreen(dragPointScreen);
         return true;
@@ -94,8 +92,8 @@ public class UniverseInputProcessor extends InputAdapter {
             Universe.getInstance().getCamera().translate(new Vector3(lastMousePosWorld).sub(Universe.getInstance().getCamera().position));
         }
         Universe.getInstance().getCamera().zoom = MathUtils.clamp(Universe.getInstance().getCamera().zoom + amount * Globals.CAMERA_ZOOM_FACTOR_INPUT,
-                                                                  Globals.CAMERA_ZOOM_MIN,
-                                                                  Globals.CAMERA_ZOOM_MAX);
+                Globals.CAMERA_ZOOM_MIN,
+                Globals.CAMERA_ZOOM_MAX);
 
         Universe.getInstance().getCamera().update();
         if (Universe.getInstance().getCenteredBody() == null) {
