@@ -33,11 +33,14 @@ public class Globals {
     public static final float GLOW_QUALITY = 2.5f;
     public static final float GLOW_INTENSITY = 2f;
     /**
-     * /**
      * Circle menu settings
      */
     public static final float CIRCLE_MENU_BUTTON_SIZE = 2;
     public static final float CIRCLE_MENU_BUTTON_MARGIN = 1;
+    /**
+     * Mass settings
+     */
+    public static final int KEEP_LAST_POSITIONS_COUNT = 10;
 
     private Globals() {
     }

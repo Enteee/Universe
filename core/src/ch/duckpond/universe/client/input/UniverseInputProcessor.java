@@ -69,7 +69,7 @@ public class UniverseInputProcessor extends InputAdapter {
             Universe.getInstance().setCenteredBody(null);
         } else {
             // set spawn velocity
-            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(dragPointScreen).sub(Universe.getInstance().getMassSpawnPointScreen()));
+            Universe.getInstance().setMassSpawnVelocityScreen(new Vector3(dragPointScreen));
         }
         setLastMousePosScreen(dragPointScreen);
         return true;

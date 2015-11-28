@@ -1,27 +1,19 @@
 package ch.duckpond.universe.shared.simulation;
 
+import ch.duckpond.universe.client.Mass;
+import ch.duckpond.universe.client.Universe;
+import ch.duckpond.universe.utils.box2d.BodyUtils;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.Contact;
-import com.badlogic.gdx.physics.box2d.ContactImpulse;
-import com.badlogic.gdx.physics.box2d.ContactListener;
-import com.badlogic.gdx.physics.box2d.Manifold;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
-import ch.duckpond.universe.client.Mass;
-import ch.duckpond.universe.client.Universe;
-import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 /**
  * The universe simulation
@@ -65,7 +57,7 @@ public class Simulation {
             @Override
             public void preSolve(final Contact contact, final Manifold oldManifold) {
                 contacts.add(new ContactTuple(contact.getFixtureA().getBody(),
-                                              contact.getFixtureB().getBody()));
+                        contact.getFixtureB().getBody()));
             }
 
             @Override
@@ -96,12 +88,12 @@ public class Simulation {
                 // first create resulting body
                 final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
                 final Body newBody = spawnMass(new Vector3(collisionResultDef.position.x,
-                                                           collisionResultDef.position.y,
-                                                           0),
-                                               BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
-                                               new Vector3(collisionResultDef.linearVelocity.x,
-                                                           collisionResultDef.linearVelocity.y,
-                                                           0));
+                                collisionResultDef.position.y,
+                                0),
+                        BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
+                        new Vector3(collisionResultDef.linearVelocity.x,
+                                collisionResultDef.linearVelocity.y,
+                                0));
                 // destory old bodies
                 world.destroyBody(i.getLooser());
                 destroyedBodies.add(i.getLooser());
@@ -119,8 +111,11 @@ public class Simulation {
         final Array<Body> otherBodies = new Array<Body>(world.getBodyCount());
         world.getBodies(bodies);
         world.getBodies(otherBodies);
-        // Body gravity
+
         for (final Body body : bodies) {
+            // Remember position
+            ((Mass) body.getUserData()).addLastPosition(new Vector3(body.getPosition().x, body.getPosition().y, 0));
+            // Body gravity:
             // Random select a maximum amount of bodies
             otherBodies.shuffle();
             for (int i = 0; (i < MAX_GRAVITY_BODIES_PER_UPDATE) && (i < bodies.size); ++i) {
