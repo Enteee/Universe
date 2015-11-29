@@ -40,7 +40,7 @@ public class Globals {
     /**
      * Mass settings
      */
-    public static final int KEEP_LAST_POSITIONS_COUNT = 10;
+    public static final int KEEP_LAST_POSITIONS_COUNT = 300;
 
     private Globals() {
     }
