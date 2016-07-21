@@ -14,12 +14,15 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import ch.duckpond.universe.client.Mass;
+import ch.duckpond.universe.client.Player;
 import ch.duckpond.universe.client.Universe;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
@@ -108,13 +111,15 @@ public class Simulation {
                 destroyedBodies.add(i.getLooser());
                 world.destroyBody(i.getWinner());
                 destroyedBodies.add(i.getWinner());
-                // was one of the destroied bodies the centered body?
+                // was one of the destroyed bodies the centered body?
                 if (Universe.getInstance().getCenteredBody() == i.getLooser() || Universe.getInstance().getCenteredBody() == i.getWinner()) {
                     Universe.getInstance().setCenteredBody(newBody);
                 }
             }
         }
         contacts.clear();
+        // Reset energies
+        final Map<Player, Float> energies = new HashMap<>();
         // Get list of bodies
         final Array<Body> bodies = new Array<Body>(world.getBodyCount());
         final Array<Body> otherBodies = new Array<Body>(world.getBodyCount());
@@ -122,10 +127,19 @@ public class Simulation {
         world.getBodies(otherBodies);
 
         for (final Body body : bodies) {
+            final Mass bodyMass = (Mass) body.getUserData();
+            final Player bodyOwner = bodyMass.getOwner();
             // Remember position
-            ((Mass) body.getUserData()).addLastPosition(new Vector3(body.getPosition().x,
-                                                                    body.getPosition().y,
-                                                                    0));
+            bodyMass.addLastPosition(new Vector3(body.getPosition().x,
+                                                 body.getPosition().y,
+                                                 0));
+            // Update player energy
+            if (!energies.containsKey(bodyOwner)) {
+                energies.put(bodyOwner, 0f);
+            }
+            float playerEnergy = energies.get(bodyOwner);
+            playerEnergy += BodyUtils.getEnergy(body);
+            energies.put(bodyOwner, playerEnergy);
             // Body gravity:
             // Random select a maximum amount of bodies
             otherBodies.shuffle();
@@ -145,6 +159,11 @@ public class Simulation {
                     }
                 }
             }
+        }
+
+        // add energies to players
+        for (Map.Entry<Player, Float> energy : energies.entrySet()) {
+            energy.getKey().addEnergy(energy.getValue());
         }
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }

@@ -24,14 +24,7 @@ public class Mass {
      * Mass owned by the local player
      */
     public Mass() {
-        this(Universe.getInstance().getThisPlayer());
-    }
-
-    /**
-     * @param owner Player this mass belongs to
-     */
-    public Mass(final Player owner) {
-        this.owner = owner;
+        owner = Universe.getInstance().getThisPlayer();
     }
 
     public Player getOwner() {

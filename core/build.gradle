@@ -10,4 +10,5 @@ eclipse.project {
 }
 dependencies {
     compile 'org.lwjgl.lwjgl:lwjgl_util:2.9.2'
+    compile "com.strongjoshua:libgdx-inGameConsole:0.5.0"
 }

@@ -41,6 +41,10 @@ public class Globals {
      * Mass settings
      */
     public static final int KEEP_LAST_POSITIONS_COUNT = 300;
+    /**
+     * Player settings
+     */
+    public static final int KEEP_LAST_ENERGIES_COUNT = 500;
 
     private Globals() {
     }

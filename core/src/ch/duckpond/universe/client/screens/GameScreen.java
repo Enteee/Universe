@@ -1,10 +1,9 @@
-package ch.duckpond.universe.client;
+package ch.duckpond.universe.client.screens;
 
-import com.badlogic.gdx.Application;
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -13,7 +12,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -22,20 +20,20 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.strongjoshua.console.Console;
-import com.strongjoshua.console.GUIConsole;
 
-import ch.duckpond.universe.client.screens.GameScreen;
+import ch.duckpond.universe.client.Mass;
+import ch.duckpond.universe.client.NeonColors;
+import ch.duckpond.universe.client.Player;
+import ch.duckpond.universe.client.input.UniverseGestureProcessor;
+import ch.duckpond.universe.client.input.UniverseInputProcessor;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 
 /**
- * The main game class.
- *
- * @author ente
+ * Main game screen.
  */
-public class Universe extends Game {
+public class GameScreen implements Screen {
 
-    private static final Universe universe = new Universe();
     private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
     private Simulation simulation;
     private SpriteBatch batch;
@@ -53,11 +51,32 @@ public class Universe extends Game {
      */
     private Body centeredBody;
 
-    private Universe() {
-    }
+    public GameScreen(final InputMultiplexer inputMultiplexer) {
+        if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
+            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor()));
+        } else {
+            inputMultiplexer.addProcessor(new UniverseInputProcessor());
+        }
 
-    public static Universe getInstance() {
-        return universe;
+        // simulation set up
+        Box2D.init();
+        simulation = new Simulation();
+        // set up rendering
+        batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
+        final int width = Gdx.graphics.getWidth();
+        final int height = Gdx.graphics.getHeight();
+        camera = new OrthographicCamera(200f, 200f * height / (float) width);
+        orthoCamera = new OrthographicCamera();
+        orthoCamera.setToOrtho(true);
+        // create frame buffers
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
+                                       Gdx.files.internal("shaders/glowshader.frag"));
+        if (!glowShader.isCompiled()) {
+            throw new GdxRuntimeException(String.format("Shader not compiled: %s",
+                                                        glowShader.getLog()));
+        }
     }
 
     public Vector3 getMassSpawnPointScreen() {
@@ -92,8 +111,8 @@ public class Universe extends Game {
     }
 
     /**
-     * Spwan the mass which was previousely defined with {@link Universe#setMassSpawnPointScreen
-     * (Vector3)} and {@link Universe#setMassSpawnVelocityScreen(Vector3)}
+     * Spwan the mass which was previousely defined with {@link GameScreen#setMassSpawnPointScreen
+     * (Vector3)} and {@link GameScreen#setMassSpawnVelocityScreen(Vector3)}
      */
     public void spawnMass() {
         if (isMassSpawning()) {
@@ -146,56 +165,12 @@ public class Universe extends Game {
     }
 
     @Override
-    public void create() {
-        // gdx set up
-        Gdx.app.setLogLevel(Application.LOG_DEBUG);
-        InputMultiplexer inputMultiplexer = new InputMultiplexer();
-        if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new ch.duckpond.universe.client.input.UniverseGestureProcessor()));
-        } else {
-            inputMultiplexer.addProcessor(new ch.duckpond.universe.client.input.UniverseInputProcessor());
-        }
-        Gdx.input.setInputProcessor(inputMultiplexer);
+    public void show() {
 
-        // console set up (TODO: don't know why I've to set windowedMode *2)
-        float w = Gdx.graphics.getWidth();
-        w *= 2;
-        float h = Gdx.graphics.getHeight();
-        h *= 2;
-        Gdx.app.getGraphics().setWindowedMode((int) w, (int) h);
-
-        console = new GUIConsole(true);
-        console.setCommandExecutor(new DebugCommandExecutor());
-        console.setKeyID(Input.Keys.ESCAPE);
-        console.setMaxEntries(16);
-        console.setSizePercent(100, 33);
-        console.setPosition(0, 0);
-
-        // simulation set up
-        Box2D.init();
-        simulation = new Simulation();
-        // set up rendering
-        batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
-        final int width = Gdx.graphics.getWidth();
-        final int height = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera(200f, 200f * height / (float) width);
-        orthoCamera = new OrthographicCamera();
-        orthoCamera.setToOrtho(true);
-        // create frame buffers
-        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
-        glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
-                                       Gdx.files.internal("shaders/glowshader.frag"));
-        if (!glowShader.isCompiled()) {
-            throw new GdxRuntimeException(String.format("Shader not compiled: %s",
-                                                        glowShader.getLog()));
-        }
-        // jump into game
-        setScreen(new GameScreen(inputMultiplexer));
     }
 
     @Override
-    public void render() {
+    public void render(float delta) {
 
         // do a simulation step. Do this first so that we can assume that most structures are
         // already populated with at lest one value.
@@ -216,7 +191,7 @@ public class Universe extends Game {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // draw masses background
-        shapeRenderer.begin(ShapeType.Filled);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
         // draw masses backgrounds
         for (final Body body : simulation.getBodies()) {
@@ -248,7 +223,7 @@ public class Universe extends Game {
                                         massSpawnVelocityScreen,
                                         massSpawnVelocityWorld));
 
-            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
             shapeRenderer.circle(massSpawnPointWorld.x,
@@ -259,7 +234,7 @@ public class Universe extends Game {
             shapeRenderer.end();
         }
         // draw (0,0) refernce
-        shapeRenderer.begin(ShapeType.Line);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
         shapeRenderer.x(0, 0, Globals.MASS_SPAWN_RADIUS * camera.zoom);
@@ -296,9 +271,29 @@ public class Universe extends Game {
         orthoCamera.setToOrtho(true);
     }
 
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void hide() {
+
+    }
+
+    @Override
+    public void dispose() {
+
+    }
+
     private void drawMasses() {
         // draw massess
-        shapeRenderer.begin(ShapeType.Filled);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
         for (final Body body : simulation.getBodies()) {
             shapeRenderer.setColor(((Mass) body.getUserData()).getOwner().getColor());
