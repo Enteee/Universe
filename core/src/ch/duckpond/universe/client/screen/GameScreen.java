@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client.screens;
+package ch.duckpond.universe.client.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -13,12 +13,15 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.GdxRuntimeException;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import com.strongjoshua.console.Console;
 
 import ch.duckpond.universe.client.Mass;
@@ -26,6 +29,7 @@ import ch.duckpond.universe.client.NeonColors;
 import ch.duckpond.universe.client.Player;
 import ch.duckpond.universe.client.input.UniverseGestureProcessor;
 import ch.duckpond.universe.client.input.UniverseInputProcessor;
+import ch.duckpond.universe.client.scene.Hud;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 
@@ -33,6 +37,11 @@ import ch.duckpond.universe.shared.simulation.Simulation;
  * Main game screen.
  */
 public class GameScreen implements Screen {
+
+    private final Stage stage = new Stage();
+    private final Viewport viewport;
+
+    private final Hud hud;
 
     private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
     private Simulation simulation;
@@ -52,21 +61,23 @@ public class GameScreen implements Screen {
     private Body centeredBody;
 
     public GameScreen(final InputMultiplexer inputMultiplexer) {
+        // add input
         if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor()));
+            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor(this)));
         } else {
-            inputMultiplexer.addProcessor(new UniverseInputProcessor());
+            inputMultiplexer.addProcessor(new UniverseInputProcessor(this));
         }
 
         // simulation set up
-        Box2D.init();
-        simulation = new Simulation();
+        simulation = new Simulation(this);
+
         // set up rendering
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         final int width = Gdx.graphics.getWidth();
         final int height = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera(200f, 200f * height / (float) width);
+        camera = new OrthographicCamera(Globals.V_WIDTH, Globals.V_HEIGHT);
+
         orthoCamera = new OrthographicCamera();
         orthoCamera.setToOrtho(true);
         // create frame buffers
@@ -77,6 +88,12 @@ public class GameScreen implements Screen {
             throw new GdxRuntimeException(String.format("Shader not compiled: %s",
                                                         glowShader.getLog()));
         }
+
+        // initialize viewport
+        viewport = new StretchViewport(Globals.V_WIDTH, Globals.V_HEIGHT, orthoCamera);
+
+        //initialize hud
+        hud = new Hud(this, batch);
     }
 
     public Vector3 getMassSpawnPointScreen() {
@@ -108,6 +125,14 @@ public class GameScreen implements Screen {
 
     public OrthographicCamera getCamera() {
         return camera;
+    }
+
+    public SpriteBatch getBatch() {
+        return batch;
+    }
+
+    public Viewport getViewport() {
+        return viewport;
     }
 
     /**
@@ -190,7 +215,7 @@ public class GameScreen implements Screen {
         Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // draw masses background
+        // draw masses background (black for neon effect speedup)
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
         // draw masses backgrounds
@@ -206,6 +231,7 @@ public class GameScreen implements Screen {
         }
         shapeRenderer.end();
 
+        hud.stage.draw();
         drawMasses();
 
         // draw spawning mass
@@ -243,7 +269,7 @@ public class GameScreen implements Screen {
         neonTargetAFBO.end();
 
         //clear the background FBO
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClearColor(1f, 1f, 1f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
@@ -257,12 +283,10 @@ public class GameScreen implements Screen {
         batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
         batch.end();
 
+        //batch.begin();
+        //batch.setProjectionMatrix(orthoCamera.combined);
         //drawMasses();
-
-        // draw the console
-        batch.begin();
-        console.draw();
-        batch.end();
+        //batch.end();
     }
 
     @Override
@@ -305,10 +329,13 @@ public class GameScreen implements Screen {
                 final Color renderColor = shapeRenderer.getColor();
                 for (int i = 0; i < lastPositions.length - 2; ++i) {
                     final Color alphaColor = new Color(renderColor);
-                    //alphaColor.a = 1 - i / (float) lastPositions.length;
                     alphaColor.a = 1 - (float) (Math.log(i) / Math.log(lastPositions.length));
                     shapeRenderer.setColor(alphaColor);
-                    shapeRenderer.line(lastPositions[i], lastPositions[i + 1]);
+                    shapeRenderer.rectLine(new Vector2(lastPositions[i].x, lastPositions[i].y),
+                                           new Vector2(lastPositions[i + 1].x,
+                                                       lastPositions[i + 1].y),
+                                           circleShape.getRadius() * 2 - circleShape.getRadius() * 2 *
+                                                   (float) (Math.log(i) / Math.log(lastPositions.length)));
                 }
                 shapeRenderer.setColor(renderColor);
                 // outer glow border

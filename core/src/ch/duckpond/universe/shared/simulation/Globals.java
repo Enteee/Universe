@@ -10,6 +10,11 @@ import java.util.Random;
 public class Globals {
     public static final Random RANDOM = new Random();
     /**
+     * Universe settings.
+     */
+    public static final int V_WIDTH = 400;
+    public static final int V_HEIGHT = 400;
+    /**
      * Radius of new spawning mass
      */
     public static final float MASS_SPAWN_RADIUS = 1;
@@ -29,7 +34,7 @@ public class Globals {
     /**
      * Glow filter settings
      */
-    public static final int GLOW_SAMPLES = 5;
+    public static final int GLOW_SAMPLES = 7;
     public static final float GLOW_QUALITY = 2.5f;
     public static final float GLOW_INTENSITY = 2f;
     /**

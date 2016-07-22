@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.duckpond.universe.client.Universe;
+import ch.duckpond.universe.client.screen.GameScreen;
 
 /**
  * Circle menu implementation.
@@ -20,10 +20,12 @@ import ch.duckpond.universe.client.Universe;
  * @author ente
  */
 public class CircleMenu {
+    private final GameScreen gameScreen;
     private final Map<Circle, CircleMenuItem> circles = new HashMap<Circle, CircleMenuItem>();
     private final Object attachable;
 
-    public CircleMenu(final Object attachable) {
+    public CircleMenu(final GameScreen gameScreen, final Object attachable) {
+        this.gameScreen = gameScreen;
         this.attachable = attachable;
     }
 
@@ -65,7 +67,7 @@ public class CircleMenu {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 // check if item was clicked
-                final Vector3 lastMousePosScreen = Universe.getInstance().getCamera().unproject(new Vector3(
+                final Vector3 lastMousePosScreen = gameScreen.getCamera().unproject(new Vector3(
                         screenX,
                         screenY,
                         0));

@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 
 import ch.duckpond.universe.client.circlemenu.CircleMenu;
+import ch.duckpond.universe.client.screen.GameScreen;
 import ch.duckpond.universe.shared.simulation.Globals;
 
 /**
@@ -16,16 +17,19 @@ import ch.duckpond.universe.shared.simulation.Globals;
  */
 public class Mass {
 
-    private final CircleMenu circleMenu = new CircleMenu(this);
+    private final CircleMenu circleMenu;
     private final Deque<Vector3> lastPositions = new LinkedList();
     private Player owner;
 
     /**
      * Mass owned by the local player
+     * @param gameScreen gameScreen
      */
-    public Mass() {
-        owner = Universe.getInstance().getThisPlayer();
+    public Mass(final GameScreen gameScreen) {
+        owner = gameScreen.getThisPlayer();
+        circleMenu = new CircleMenu(gameScreen, this);
     }
+
 
     public Player getOwner() {
         return owner;

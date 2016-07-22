@@ -5,6 +5,8 @@ import com.strongjoshua.console.CommandExecutor;
 
 import java.lang.reflect.Field;
 
+import ch.duckpond.universe.client.screen.GameScreen;
+
 /**
  * The debug command executor, allows alls commands.
  *
@@ -13,7 +15,7 @@ import java.lang.reflect.Field;
 public class DebugCommandExecutor extends CommandExecutor {
 
     public void newPlayer() throws IllegalAccessException, NoSuchFieldException {
-        final Field thisPlayer = Universe.class.getDeclaredField("thisPlayer");
+        final Field thisPlayer = GameScreen.class.getDeclaredField("thisPlayer");
         thisPlayer.setAccessible(true);
         thisPlayer.set(Universe.getInstance(),
                        new Player(new Color(NeonColors.getRandomColor().getColorRGB888())));

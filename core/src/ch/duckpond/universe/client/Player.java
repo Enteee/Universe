@@ -19,10 +19,8 @@ public class Player {
 
     public Player(final Color color) {
         this.color = color;
-    }
-
-    public Color getColor() {
-        return color;
+        // add base energy, so that we  won't get a NULL on Player#getEnergy()
+        addEnergy(0f);
     }
 
     public void addEnergy(float energy) {
@@ -30,6 +28,10 @@ public class Player {
         if (energies.size() > Globals.KEEP_LAST_ENERGIES_COUNT) {
             energies.removeLast();
         }
+    }
+
+    public Color getColor() {
+        return color;
     }
 
     public float getEnergy() {

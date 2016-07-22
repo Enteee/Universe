@@ -23,7 +23,7 @@ import java.util.Set;
 
 import ch.duckpond.universe.client.Mass;
 import ch.duckpond.universe.client.Player;
-import ch.duckpond.universe.client.Universe;
+import ch.duckpond.universe.client.screen.GameScreen;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 /**
@@ -38,14 +38,16 @@ public class Simulation {
     private static final int UPDATE_VELOCITY_ITERATIONS = 10;
     private static final float GRAVITATIONAL_CONSTANT = 1f;
     private static final int MAX_GRAVITY_BODIES_PER_UPDATE = 500;
-    private final List<ContactTuple> contacts = new LinkedList<ContactTuple>();
+
+    private final GameScreen gameScreen;
     private final World world;
+    private final List<ContactTuple> contacts = new LinkedList<ContactTuple>();
 
     /**
      * Construct.
      */
-    public Simulation() {
-        this(new World(new Vector2(), false));
+    public Simulation(final GameScreen gameScreen) {
+        this(gameScreen, new World(new Vector2(), false));
     }
 
     /**
@@ -53,7 +55,8 @@ public class Simulation {
      *
      * @param world the {@link World} to run this simulation with
      */
-    public Simulation(final World world) {
+    public Simulation(final GameScreen gameScreen, final World world) {
+        this.gameScreen = gameScreen;
         this.world = world;
         world.setContactListener(new ContactListener() {
 
@@ -112,8 +115,8 @@ public class Simulation {
                 world.destroyBody(i.getWinner());
                 destroyedBodies.add(i.getWinner());
                 // was one of the destroyed bodies the centered body?
-                if (Universe.getInstance().getCenteredBody() == i.getLooser() || Universe.getInstance().getCenteredBody() == i.getWinner()) {
-                    Universe.getInstance().setCenteredBody(newBody);
+                if (gameScreen.getCenteredBody() == i.getLooser() || gameScreen.getCenteredBody() == i.getWinner()) {
+                    gameScreen.setCenteredBody(newBody);
                 }
             }
         }
@@ -130,9 +133,7 @@ public class Simulation {
             final Mass bodyMass = (Mass) body.getUserData();
             final Player bodyOwner = bodyMass.getOwner();
             // Remember position
-            bodyMass.addLastPosition(new Vector3(body.getPosition().x,
-                                                 body.getPosition().y,
-                                                 0));
+            bodyMass.addLastPosition(new Vector3(body.getPosition().x, body.getPosition().y, 0));
             // Update player energy
             if (!energies.containsKey(bodyOwner)) {
                 energies.put(bodyOwner, 0f);
@@ -178,7 +179,7 @@ public class Simulation {
         bodyDef.angle = (float) (Math.PI * 2 * Globals.RANDOM.nextFloat());
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
-        body.setUserData(new Mass());
+        body.setUserData(new Mass(gameScreen));
         body.createFixture(circleShape, Globals.MASS_DENSITY);
         return body;
     }
