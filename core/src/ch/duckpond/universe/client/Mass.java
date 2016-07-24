@@ -1,6 +1,7 @@
 package ch.duckpond.universe.client;
 
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import java.util.Deque;
@@ -15,7 +16,7 @@ import ch.duckpond.universe.shared.simulation.Globals;
  *
  * @author ente
  */
-public class Mass {
+public class Mass extends Actor {
 
     private final CircleMenu circleMenu;
     private final Deque<Vector3> lastPositions = new LinkedList();

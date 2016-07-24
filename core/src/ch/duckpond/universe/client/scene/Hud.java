@@ -1,13 +1,11 @@
 package ch.duckpond.universe.client.scene;
 
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
 
 import ch.duckpond.universe.client.screen.GameScreen;
 import ch.duckpond.universe.shared.simulation.Globals;
@@ -18,29 +16,45 @@ import ch.duckpond.universe.shared.simulation.Globals;
  * @author ente
  */
 public class Hud {
-    public Stage stage;
-    private Viewport viewport;
 
-    private Label energyLabel;
-    private Label energy;
+    private static final BitmapFont HUD_FONT = new BitmapFont(Gdx.files.internal(
+            "fonts/neons_regular_48" + ".fnt"));
+    /**
+     * Relative HUD size to stage size.
+     */
+    private static float HUD_SIZE_W = .3f;
+    private static float HUD_SIZE_H = .1f;
+    private final GameScreen game;
 
-    public Hud(final GameScreen game, final SpriteBatch batch) {
-        viewport = new FitViewport(Globals.V_WIDTH, Globals.V_HEIGHT, new OrthographicCamera());
-        stage = new Stage(viewport, batch);
+    public Hud(final GameScreen game, final Stage stage) {
+        this.game = game;
+        stage.addActor(new EnergyDisplay());
+    }
 
-        energyLabel = new Label("Energy",
-                                new Label.LabelStyle(new BitmapFont(),
-                                                     game.getThisPlayer().getColor()));
-        energyLabel = new Label(String.format("%05d", (int) game.getThisPlayer().getEnergy()),
-                                new Label.LabelStyle(new BitmapFont(),
-                                                     game.getThisPlayer().getColor()));
+    private class EnergyDisplay extends Actor {
 
-        final Table table = new Table();
-        table.top();
-        table.setFillParent(true);
-        table.add(energyLabel).expandX().padTop(1);
-        table.row();
-        table.add(energy).expandX();
-        stage.addActor(table);
+        GlyphLayout layout = new GlyphLayout();
+
+        @Override
+        public void draw(Batch batch, float parentAlpha) {
+            HUD_FONT.setColor(game.getThisPlayer().getColor());
+            batch.setColor(game.getThisPlayer().getColor());
+
+            layout.setText(HUD_FONT,
+                           humanReadableCount((long) game.getThisPlayer().getEnergy(), true));
+            HUD_FONT.draw(batch,
+                          layout,
+                          game.getStaticStage().getWidth() - layout.width - Globals.GLOW_SAMPLES,
+                          game.getStaticStage().getHeight() - Globals.GLOW_SAMPLES);
+        }
+
+        // from: http://stackoverflow.com/questions/3758606/how-to-convert-byte-size-into-human-readable-format-in-java/3758880#3758880
+        public String humanReadableCount(long count, boolean si) {
+            int unit = si ? 1000 : 1024;
+            if (count < unit) return String.format("%d", count);
+            int exp = (int) (Math.log(count) / Math.log(unit));
+            String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+            return String.format("%.1f %s", count / Math.pow(unit, exp), pre);
+        }
     }
 }

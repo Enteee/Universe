@@ -8,27 +8,27 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.GdxRuntimeException;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.strongjoshua.console.Console;
 
 import ch.duckpond.universe.client.Mass;
 import ch.duckpond.universe.client.NeonColors;
 import ch.duckpond.universe.client.Player;
-import ch.duckpond.universe.client.input.UniverseGestureProcessor;
-import ch.duckpond.universe.client.input.UniverseInputProcessor;
 import ch.duckpond.universe.client.scene.Hud;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
@@ -38,8 +38,10 @@ import ch.duckpond.universe.shared.simulation.Simulation;
  */
 public class GameScreen implements Screen {
 
-    private final Stage stage = new Stage();
-    private final Viewport viewport;
+    private final Stage worldStage;
+    private final Viewport worldViewport;
+    private final Stage staticStage;
+    private final Viewport staticViewport;
 
     private final Hud hud;
 
@@ -48,13 +50,17 @@ public class GameScreen implements Screen {
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
-    private OrthographicCamera orthoCamera;
-    private boolean massSpawning = false;
-    private Vector3 massSpawnPointScreen = new Vector3();
-    private Vector3 massSpawnVelocityScreen = new Vector3();
+    /**
+     * Camera only used to render final framebuffers with shaders
+     */
+    private OrthographicCamera fbCamera;
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
-    private Console console;
+
+    private boolean massSpawning = false;
+    private Vector3 massSpawnPointWorld = new Vector3();
+    private Vector3 massSpawnVelocityWorld = new Vector3();
+
     /**
      * Body on which to center the view.
      */
@@ -62,11 +68,14 @@ public class GameScreen implements Screen {
 
     public GameScreen(final InputMultiplexer inputMultiplexer) {
         // add input
+        /*
         if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor(this)));
+            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor
+            // (this)));
         } else {
             inputMultiplexer.addProcessor(new UniverseInputProcessor(this));
         }
+        */
 
         // simulation set up
         simulation = new Simulation(this);
@@ -74,14 +83,27 @@ public class GameScreen implements Screen {
         // set up rendering
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        final int width = Gdx.graphics.getWidth();
-        final int height = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera(Globals.V_WIDTH, Globals.V_HEIGHT);
+        camera = new OrthographicCamera();
+        fbCamera = new OrthographicCamera();
 
-        orthoCamera = new OrthographicCamera();
-        orthoCamera.setToOrtho(true);
+        // initialize viewports & stages
+        worldViewport = new FitViewport(Globals.V_WIDTH, Globals.V_HEIGHT, camera);
+        worldStage = new Stage(worldViewport, batch);
+        inputMultiplexer.addProcessor(worldStage);
+
+        staticViewport = new FitViewport(Globals.V_WIDTH,
+                                         Globals.V_HEIGHT,
+                                         new OrthographicCamera());
+        staticStage = new Stage(staticViewport, batch);
+        inputMultiplexer.addProcessor(staticStage);
+
+        worldStage.addListener(new GameScreenInputListener());
+
         // create frame buffers
-        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888,
+                                         worldViewport.getScreenWidth(),
+                                         worldViewport.getScreenHeight(),
+                                         false);
         glowShader = new ShaderProgram(Gdx.files.internal("shaders/passthrough.vert"),
                                        Gdx.files.internal("shaders/glowshader.frag"));
         if (!glowShader.isCompiled()) {
@@ -89,25 +111,18 @@ public class GameScreen implements Screen {
                                                         glowShader.getLog()));
         }
 
-        // initialize viewport
-        viewport = new StretchViewport(Globals.V_WIDTH, Globals.V_HEIGHT, orthoCamera);
-
         //initialize hud
-        hud = new Hud(this, batch);
-    }
-
-    public Vector3 getMassSpawnPointScreen() {
-        return massSpawnPointScreen;
+        hud = new Hud(this, staticStage);
     }
 
     /**
      * Starts the spawn process of a new mass
      *
-     * @param massSpawnPointScreen the spawn location in screen coordinates
+     * @param massSpawnPointWorld the spawn location in screen coordinates
      */
-    public void setMassSpawnPointScreen(final Vector3 massSpawnPointScreen) {
-        this.massSpawnPointScreen = new Vector3(massSpawnPointScreen);
-        this.massSpawnVelocityScreen = new Vector3(massSpawnPointScreen);
+    private void setMassSpawnPointWorld(final Vector3 massSpawnPointWorld) {
+        this.massSpawnPointWorld = new Vector3(massSpawnPointWorld);
+        this.massSpawnVelocityWorld = new Vector3(massSpawnPointWorld);
         massSpawning = true;
     }
 
@@ -127,42 +142,43 @@ public class GameScreen implements Screen {
         return camera;
     }
 
-    public SpriteBatch getBatch() {
+    public Stage getWorldStage() {
+        return worldStage;
+    }
+
+    public Stage getStaticStage() {
+        return staticStage;
+    }
+
+    public Batch getBatch() {
         return batch;
     }
 
-    public Viewport getViewport() {
-        return viewport;
+    /**
+     * Sets the velocity point of a spawning mass
+     *
+     * @param massSpawnVelocityWorld velocity in screen coordinates
+     */
+    public void setMassSpawnVelocityWorld(final Vector3 massSpawnVelocityWorld) {
+        this.massSpawnVelocityWorld = new Vector3(massSpawnVelocityWorld);
     }
 
     /**
-     * Spwan the mass which was previousely defined with {@link GameScreen#setMassSpawnPointScreen
-     * (Vector3)} and {@link GameScreen#setMassSpawnVelocityScreen(Vector3)}
+     * Spwan the mass which was previousely defined with {@link GameScreen#setMassSpawnPointWorld
+     * (Vector3)} and {@link GameScreen#setMassSpawnVelocityWorld(Vector3)}
      */
     public void spawnMass() {
         if (isMassSpawning()) {
-            final Vector3 massSpawnPointWorld = camera.unproject(new Vector3(massSpawnPointScreen));
-            final Vector3 massSpawnVelocityWorld = camera.unproject(new Vector3(
-                    massSpawnVelocityScreen));
             simulation.spawnMass(massSpawnPointWorld,
                                  Globals.MASS_SPAWN_RADIUS * camera.zoom,
                                  new Vector3(massSpawnPointWorld).sub(massSpawnVelocityWorld));
-            massSpawnVelocityScreen = new Vector3();
+            massSpawnVelocityWorld = new Vector3();
             massSpawning = false;
         }
     }
 
     public boolean isMassSpawning() {
         return massSpawning;
-    }
-
-    /**
-     * Sets the velocity point of a spawning mass
-     *
-     * @param massSpawnVelocityScreen velocity in screen coordinates
-     */
-    public void setMassSpawnVelocityScreen(final Vector3 massSpawnVelocityScreen) {
-        this.massSpawnVelocityScreen = new Vector3(massSpawnVelocityScreen);
     }
 
     /**
@@ -212,7 +228,7 @@ public class GameScreen implements Screen {
 
         // bind the neonTargetAFBO
         neonTargetAFBO.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // draw masses background (black for neon effect speedup)
@@ -231,23 +247,17 @@ public class GameScreen implements Screen {
         }
         shapeRenderer.end();
 
-        hud.stage.draw();
         drawMasses();
+
+        worldStage.draw();
+        staticStage.draw();
 
         // draw spawning mass
         if (isMassSpawning()) {
-            final Vector3 massSpawnPointWorld = camera.unproject(new Vector3(massSpawnPointScreen));
-            final Vector3 massSpawnVelocityWorld = camera.unproject(new Vector3(
-                    massSpawnVelocityScreen));
-
             Gdx.app.debug(getClass().getName(),
-                          String.format("massSpawnPointScreen: %s, massSpawnPointWorld: %s",
-                                        this.massSpawnPointScreen,
-                                        massSpawnPointWorld));
+                          String.format("massSpawnPointWorld: %s", massSpawnPointWorld));
             Gdx.app.debug(getClass().getName(),
-                          String.format("massSpawnVelocityScreen: %s massSpawnVelocityWorld: %s",
-                                        massSpawnVelocityScreen,
-                                        massSpawnVelocityWorld));
+                          String.format("massSpawnVelocityWorld: %s", massSpawnVelocityWorld));
 
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.setProjectionMatrix(camera.combined);
@@ -269,30 +279,38 @@ public class GameScreen implements Screen {
         neonTargetAFBO.end();
 
         //clear the background FBO
-        Gdx.gl.glClearColor(1f, 1f, 1f, 0f);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
-        batch.setProjectionMatrix(orthoCamera.combined);
+        batch.setProjectionMatrix(fbCamera.combined);
 
         batch.setShader(glowShader);
         glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
         glowShader.setUniformi("samples", Globals.GLOW_SAMPLES);
         glowShader.setUniformf("quality", Globals.GLOW_QUALITY);
         glowShader.setUniformf("intensity", Globals.GLOW_INTENSITY);
-        batch.draw(neonTargetAFBO.getColorBufferTexture(), 0, 0);
+        batch.draw(neonTargetAFBO.getColorBufferTexture(),
+                   worldViewport.getScreenX(),
+                   worldViewport.getScreenY());
         batch.end();
 
-        //batch.begin();
-        //batch.setProjectionMatrix(orthoCamera.combined);
-        //drawMasses();
-        //batch.end();
     }
 
     @Override
     public void resize(int width, int height) {
-        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
-        orthoCamera.setToOrtho(true);
+        worldViewport.update(width, height);
+        staticViewport.update(width, height);
+
+        neonTargetAFBO = new FrameBuffer(Pixmap.Format.RGBA8888,
+                                         worldViewport.getScreenWidth(),
+                                         worldViewport.getScreenHeight(),
+                                         false);
+        Gdx.app.debug(getClass().getName(),
+                      String.format("Viewport (%d x %d)",
+                                    worldViewport.getScreenWidth(),
+                                    worldViewport.getScreenHeight()));
+        fbCamera.setToOrtho(true);
     }
 
     @Override
@@ -352,5 +370,77 @@ public class GameScreen implements Screen {
             }
         }
         shapeRenderer.end();
+    }
+
+    /**
+     * Input listener for non-touch environment.
+     *
+     * @author ente
+     */
+    public class GameScreenInputListener extends InputListener {
+        private Vector3 touchDownPosWorld = new Vector3();
+
+        @Override
+        public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+            touchDownPosWorld = new Vector3(x, y, 0);
+            Gdx.app.debug(getClass().getName(), String.format("touchDown %s", touchDownPosWorld));
+            switch (button) {
+                case Input.Buttons.LEFT: {
+                    setMassSpawnPointWorld(touchDownPosWorld);
+                    break;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public void touchUp(InputEvent event, float x, float y, int pointer, int button) {
+            setMassSpawnVelocityWorld(new Vector3(x, y, 0));
+            spawnMass();
+        }
+
+        @Override
+        public void touchDragged(InputEvent event, float x, float y, int pointer) {
+            final Vector3 dragPointWorld = new Vector3(x, y, 0);
+            Gdx.app.debug(getClass().getName(), String.format("touchDragged: %s", dragPointWorld));
+            if (!isMassSpawning()) {
+                // move camera
+                final Vector3 dragMove = new Vector3(touchDownPosWorld).sub(dragPointWorld);
+                camera.translate(dragMove);
+                camera.update();
+                centeredBody = null;
+            } else {
+                // set spawn velocity
+                setMassSpawnVelocityWorld(dragPointWorld);
+            }
+        }
+
+        @Override
+        public boolean scrolled(InputEvent event, float x, float y, int amount) {
+            if (isMassSpawning()) {
+                return false;
+            }
+            final float zoomCorrection = amount * Globals.CAMERA_ZOOM_FACTOR_INPUT;
+            final float newCameraZoom = MathUtils.clamp(camera.zoom + zoomCorrection,
+                                                        Globals.CAMERA_ZOOM_MIN,
+                                                        Globals.CAMERA_ZOOM_MAX);
+
+            final Vector3 cameraToMouseWorld = new Vector3(x, y, 0).sub(camera.position);
+            final Vector3 cameraCorrection = new Vector3(cameraToMouseWorld).scl(-zoomCorrection / camera.zoom);
+
+            /*
+             *enable mouse centric zoom if:
+             * 1. we don't follow a body
+             * 2. zoom has changed
+             */
+            if (centeredBody == null && newCameraZoom != camera.zoom) {
+                camera.translate(cameraCorrection);
+            }
+            camera.zoom = newCameraZoom;
+            camera.update();
+
+            return true;
+        }
+
     }
 }
