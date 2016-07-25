@@ -3,10 +3,7 @@ package ch.duckpond.universe.client;
 
 import com.badlogic.gdx.graphics.Color;
 
-import java.util.Deque;
-import java.util.LinkedList;
-
-import ch.duckpond.universe.shared.simulation.Globals;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 /**
  * A player in the game
@@ -14,8 +11,11 @@ import ch.duckpond.universe.shared.simulation.Globals;
  * @author ente
  */
 public class Player {
+    public static final int KEEP_LAST_ENERGIES_COUNT = 500;
+
     private final Color color;
-    private final Deque<Float> energies = new LinkedList();
+    private final CircularFifoQueue<Float> energies = new CircularFifoQueue<>(
+            KEEP_LAST_ENERGIES_COUNT);
 
     public Player(final Color color) {
         this.color = color;
@@ -24,10 +24,7 @@ public class Player {
     }
 
     public void addEnergy(float energy) {
-        energies.addFirst(energy);
-        if (energies.size() > Globals.KEEP_LAST_ENERGIES_COUNT) {
-            energies.removeLast();
-        }
+        energies.add(energy);
     }
 
     public Color getColor() {
@@ -35,7 +32,7 @@ public class Player {
     }
 
     public float getEnergy() {
-        return energies.getFirst();
+        return energies.get(energies.size() - 1);
     }
 
 }

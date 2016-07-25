@@ -8,13 +8,10 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.CircleShape;
@@ -38,6 +35,13 @@ import ch.duckpond.universe.shared.simulation.Simulation;
  */
 public class GameScreen implements Screen {
 
+    /**
+     * Glow filter settings
+     */
+    public static final int GLOW_SAMPLES = 7;
+    public static final float GLOW_QUALITY = 2.5f;
+    public static final float GLOW_INTENSITY = 2f;
+
     private final Stage worldStage;
     private final Viewport worldViewport;
     private final Stage staticStage;
@@ -47,8 +51,8 @@ public class GameScreen implements Screen {
 
     private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
     private Simulation simulation;
+
     private SpriteBatch batch;
-    private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
     /**
      * Camera only used to render final framebuffers with shaders
@@ -56,6 +60,8 @@ public class GameScreen implements Screen {
     private OrthographicCamera fbCamera;
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
+
+    private int level = 1;
 
     private boolean massSpawning = false;
     private Vector3 massSpawnPointWorld = new Vector3();
@@ -68,31 +74,27 @@ public class GameScreen implements Screen {
 
     public GameScreen(final InputMultiplexer inputMultiplexer) {
         // add input
-        /*
-        if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
-            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor
-            // (this)));
-        } else {
-            inputMultiplexer.addProcessor(new UniverseInputProcessor(this));
-        }
-        */
+        //        if (Gdx.input.isPeripheralAvailable(Input.Peripheral.MultitouchScreen)) {
+        //            inputMultiplexer.addProcessor(new GestureDetector(new UniverseGestureProcessor
+        //            // (this)));
+        //        } else {
+        //            inputMultiplexer.addProcessor(new UniverseInputProcessor(this));
+        //        }
 
         // simulation set up
         simulation = new Simulation(this);
 
         // set up rendering
         batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
         camera = new OrthographicCamera();
         fbCamera = new OrthographicCamera();
 
         // initialize viewports & stages
-        worldViewport = new FitViewport(Globals.V_WIDTH, Globals.V_HEIGHT, camera);
+        worldViewport = new FitViewport(Globals.WORLD_V_WIDTH, Globals.WORLD_V_HEIGTH, camera);
         worldStage = new Stage(worldViewport, batch);
         inputMultiplexer.addProcessor(worldStage);
 
-        staticViewport = new FitViewport(Globals.V_WIDTH,
-                                         Globals.V_HEIGHT,
+        staticViewport = new FitViewport(Globals.STATIC_V_WIDTH, Globals.STATIC_V_HEIGTH,
                                          new OrthographicCamera());
         staticStage = new Stage(staticViewport, batch);
         inputMultiplexer.addProcessor(staticStage);
@@ -150,8 +152,8 @@ public class GameScreen implements Screen {
         return staticStage;
     }
 
-    public Batch getBatch() {
-        return batch;
+    public int getLevel() {
+        return level;
     }
 
     /**
@@ -169,9 +171,16 @@ public class GameScreen implements Screen {
      */
     public void spawnMass() {
         if (isMassSpawning()) {
-            simulation.spawnMass(massSpawnPointWorld,
-                                 Globals.MASS_SPAWN_RADIUS * camera.zoom,
-                                 new Vector3(massSpawnPointWorld).sub(massSpawnVelocityWorld));
+            final Body body = simulation.spawnBody(massSpawnPointWorld,
+                                                   Globals.MASS_SPAWN_RADIUS * camera.zoom,
+                                                   new Vector3(massSpawnPointWorld).sub(
+                                                           massSpawnVelocityWorld));
+            final Mass mass = new Mass(this);
+            mass.setBody(body);
+            body.setUserData(mass);
+
+            worldStage.addActor(mass);
+
             massSpawnVelocityWorld = new Vector3();
             massSpawning = false;
         }
@@ -217,83 +226,105 @@ public class GameScreen implements Screen {
         // already populated with at lest one value.
         simulation.update();
 
-        // center camera on centered body
-        if (centeredBody != null) {
-            final Vector3 centerTranslate = new Vector3(centeredBody.getPosition().x,
-                                                        centeredBody.getPosition().y,
-                                                        0f).sub(camera.position).scl(Globals.CAMERA_CENTER_FACTOR);
-            camera.translate(centerTranslate);
-            camera.update();
-        }
-
-        // bind the neonTargetAFBO
-        neonTargetAFBO.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        // draw masses background (black for neon effect speedup)
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        // draw masses backgrounds
-        for (final Body body : simulation.getBodies()) {
-            // outer glow border
-            for (final Fixture fixture : body.getFixtureList()) {
-                final CircleShape circleShape = (CircleShape) fixture.getShape();
-                shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
-                shapeRenderer.circle(body.getPosition().x,
-                                     body.getPosition().y,
-                                     circleShape.getRadius() + Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
-            }
-        }
-        shapeRenderer.end();
-
-        drawMasses();
-
-        worldStage.draw();
-        staticStage.draw();
-
-        // draw spawning mass
-        if (isMassSpawning()) {
-            Gdx.app.debug(getClass().getName(),
-                          String.format("massSpawnPointWorld: %s", massSpawnPointWorld));
-            Gdx.app.debug(getClass().getName(),
-                          String.format("massSpawnVelocityWorld: %s", massSpawnVelocityWorld));
-
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-            shapeRenderer.setProjectionMatrix(camera.combined);
-            shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
-            shapeRenderer.circle(massSpawnPointWorld.x,
-                                 massSpawnPointWorld.y,
-                                 Globals.MASS_SPAWN_RADIUS * camera.zoom);
-            shapeRenderer.line(massSpawnPointWorld, massSpawnVelocityWorld);
-
-            shapeRenderer.end();
-        }
-        // draw (0,0) refernce
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
-        shapeRenderer.x(0, 0, Globals.MASS_SPAWN_RADIUS * camera.zoom);
-        shapeRenderer.end();
-
-        neonTargetAFBO.end();
-
         //clear the background FBO
         Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        batch.begin();
-        batch.setProjectionMatrix(fbCamera.combined);
+        //        // center camera on centered body
+        //        if (centeredBody != null) {
+        //            final Vector3 centerTranslate = new Vector3(centeredBody.getPosition().x,
+        //                                                        centeredBody.getPosition().y,
+        //                                                        0f).sub(camera.position).scl(Globals.CAMERA_CENTER_FACTOR);
+        //            camera.translate(centerTranslate);
+        //            camera.update();
+        //        }
+        //
+        //        final ShapeRenderer shapeRenderer = BatchUtils.buildShapeRendererFromBatch(batch);
+        //
+        //        // bind the neonTargetAFBO
+        //        neonTargetAFBO.begin();
+        //        {
+        //            Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        //            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        //
+        //            // draw masses background (black & full alpha for neon effect speedup)
+        //            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        //            {
+        //                shapeRenderer.setProjectionMatrix(camera.combined);
+        //
+        //                // draw masses backgrounds
+        //                for (final Body body : simulation.getBodies()) {
+        //                    // outer glow border
+        //                    for (final Fixture fixture : body.getFixtureList()) {
+        //                        final CircleShape circleShape = (CircleShape) fixture.getShape();
+        //                        shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
+        //                        shapeRenderer.circle(body.getPosition().x,
+        //                                             body.getPosition().y,
+        //                                             circleShape.getRadius() + GLOW_SAMPLES / 2f * GLOW_QUALITY);
+        //                    }
+        //                }
+        //            }
+        //            shapeRenderer.end();
+        //
+        //            worldStage.draw();
+        //
+        //            // draw spawning mass
+        //            if (isMassSpawning()) {
+        //                Gdx.app.debug(getClass().getName(),
+        //                              String.format("massSpawnPointWorld: %s", massSpawnPointWorld));
+        //                Gdx.app.debug(getClass().getName(),
+        //                              String.format("massSpawnVelocityWorld: %s", massSpawnVelocityWorld));
+        //
+        //                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        //                {
+        //                    shapeRenderer.setProjectionMatrix(camera.combined);
+        //                    shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
+        //                    shapeRenderer.circle(massSpawnPointWorld.x,
+        //                                         massSpawnPointWorld.y,
+        //                                         Globals.MASS_SPAWN_RADIUS * camera.zoom);
+        //                    shapeRenderer.line(massSpawnPointWorld, massSpawnVelocityWorld);
+        //                }
+        //                shapeRenderer.end();
+        //            }
+        //
+        //            // draw (0,0) refernce
+        //            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        //            {
+        //                shapeRenderer.setProjectionMatrix(camera.combined);
+        //                shapeRenderer.setColor(new Color(0f, 1f, 0f, 1f));
+        //                shapeRenderer.x(0, 0, Globals.MASS_SPAWN_RADIUS * camera.zoom);
+        //            }
+        //            shapeRenderer.end();
+        //
+        //        }
+        //        neonTargetAFBO.end();
+        //
 
-        batch.setShader(glowShader);
-        glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
-        glowShader.setUniformi("samples", Globals.GLOW_SAMPLES);
-        glowShader.setUniformf("quality", Globals.GLOW_QUALITY);
-        glowShader.setUniformf("intensity", Globals.GLOW_INTENSITY);
-        batch.draw(neonTargetAFBO.getColorBufferTexture(),
-                   worldViewport.getScreenX(),
-                   worldViewport.getScreenY());
+        neonTargetAFBO.begin();
+        {
+            Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            worldStage.draw();
+        }
+        neonTargetAFBO.end();
+
+        batch.begin();
+        {
+            batch.setProjectionMatrix(fbCamera.combined);
+
+            batch.setShader(glowShader);
+            glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
+            glowShader.setUniformi("samples", GLOW_SAMPLES);
+            glowShader.setUniformf("quality", GLOW_QUALITY);
+            glowShader.setUniformf("intensity", GLOW_INTENSITY);
+            batch.draw(neonTargetAFBO.getColorBufferTexture(),
+                       worldViewport.getScreenX(),
+                       worldViewport.getScreenY());
+        }
         batch.end();
+
+        staticViewport.apply();
+        staticStage.draw();
 
     }
 
@@ -331,45 +362,6 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
 
-    }
-
-    private void drawMasses() {
-        // draw massess
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        for (final Body body : simulation.getBodies()) {
-            shapeRenderer.setColor(((Mass) body.getUserData()).getOwner().getColor());
-            for (final Fixture fixture : body.getFixtureList()) {
-                final CircleShape circleShape = (CircleShape) fixture.getShape();
-                final float innerCircleRadius = circleShape.getRadius() - Globals.MASS_SURFACE_WIDTH;
-                // velocity trail
-                final Vector3[] lastPositions = ((Mass) body.getUserData()).getLastPositions();
-                final Color renderColor = shapeRenderer.getColor();
-                for (int i = 0; i < lastPositions.length - 2; ++i) {
-                    final Color alphaColor = new Color(renderColor);
-                    alphaColor.a = 1 - (float) (Math.log(i) / Math.log(lastPositions.length));
-                    shapeRenderer.setColor(alphaColor);
-                    shapeRenderer.rectLine(new Vector2(lastPositions[i].x, lastPositions[i].y),
-                                           new Vector2(lastPositions[i + 1].x,
-                                                       lastPositions[i + 1].y),
-                                           circleShape.getRadius() * 2 - circleShape.getRadius() * 2 *
-                                                   (float) (Math.log(i) / Math.log(lastPositions.length)));
-                }
-                shapeRenderer.setColor(renderColor);
-                // outer glow border
-                shapeRenderer.circle(body.getPosition().x,
-                                     body.getPosition().y,
-                                     circleShape.getRadius());
-                // punch out inner border
-                shapeRenderer.setColor(new Color(0f, 0f, 0f, 1f));
-                shapeRenderer.circle(body.getPosition().x, body.getPosition().y, innerCircleRadius);
-                shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
-                shapeRenderer.circle(body.getPosition().x,
-                                     body.getPosition().y,
-                                     innerCircleRadius - Globals.GLOW_SAMPLES / 2f * Globals.GLOW_QUALITY);
-            }
-        }
-        shapeRenderer.end();
     }
 
     /**

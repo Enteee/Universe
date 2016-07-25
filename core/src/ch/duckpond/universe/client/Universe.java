@@ -52,10 +52,10 @@ public class Universe extends Game {
         console.setSizePercent(100, 33);
         console.setPosition(0, 0);
 
-        // jump into game
+        // jump to game
         setScreen(new GameScreen(inputMultiplexer));
-
     }
+
 
     @Override
     public void render() {

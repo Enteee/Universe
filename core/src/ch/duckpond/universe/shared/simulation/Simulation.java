@@ -101,14 +101,17 @@ public class Simulation {
                 Gdx.app.debug(getClass().toString(), String.format("Contact: %s", i));
                 // first create resulting body
                 final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
-                final Body newBody = spawnMass(new Vector3(collisionResultDef.position.x,
+                final Body newBody = spawnBody(new Vector3(collisionResultDef.position.x,
                                                            collisionResultDef.position.y,
                                                            0),
                                                BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
                                                new Vector3(collisionResultDef.linearVelocity.x,
                                                            collisionResultDef.linearVelocity.y,
                                                            0));
-                newBody.setUserData(i.getWinner().getUserData());
+                // update actors
+                newBody.setUserData(i.getWinnerMass());
+                i.getWinnerMass().setBody(newBody);
+                i.getLooserMass().remove();
                 // destory old bodies
                 world.destroyBody(i.getLooser());
                 destroyedBodies.add(i.getLooser());
@@ -169,7 +172,7 @@ public class Simulation {
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }
 
-    public Body spawnMass(final Vector3 position, final float radius, final Vector3 velocity) {
+    public Body spawnBody(final Vector3 position, final float radius, final Vector3 velocity) {
         final CircleShape circleShape = new CircleShape();
         circleShape.setRadius(radius);
         final BodyDef bodyDef = new BodyDef();
@@ -179,7 +182,6 @@ public class Simulation {
         bodyDef.angle = (float) (Math.PI * 2 * Globals.RANDOM.nextFloat());
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
-        body.setUserData(new Mass(gameScreen));
         body.createFixture(circleShape, Globals.MASS_DENSITY);
         return body;
     }
@@ -221,6 +223,14 @@ public class Simulation {
 
         protected Body getLooser() {
             return looser;
+        }
+
+        private Mass getWinnerMass() {
+            return (Mass) winner.getUserData();
+        }
+
+        private Mass getLooserMass() {
+            return (Mass) looser.getUserData();
         }
 
         protected boolean isDestroyed(final Set<Body> destroyedBodies) {

@@ -49,7 +49,7 @@
 //
 //    @Override
 //    public boolean panStop(float x, float y, int pointer, int button) {
-//        gameScreen.spawnMass();
+//        gameScreen.spawnBody();
 //        return true;
 //    }
 //
