@@ -10,7 +10,7 @@
 //import ch.duckpond.universe.shared.simulation.Globals;
 //
 ///**
-// * Universe input processor for non-touch environment.
+// * UniverseGame input processor for non-touch environment.
 // *
 // * @author ente
 // */
@@ -73,7 +73,7 @@
 //            gameScreen.setCenteredBody(null);
 //        } else {
 //            // set spawn velocity
-//            gameScreen.setMassSpawnVelocityWorld(new Vector3(dragPointScreen));
+//            gameScreen.setMassSpawnVelocity(new Vector3(dragPointScreen));
 //        }
 //        setLastMousePosScreen(dragPointScreen);
 //        return true;

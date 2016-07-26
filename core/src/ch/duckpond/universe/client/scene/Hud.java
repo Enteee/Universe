@@ -1,6 +1,7 @@
 package ch.duckpond.universe.client.scene;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -15,23 +16,23 @@ import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
 
 /**
- * Universe Hud
+ * UniverseGame Hud
  *
  * @author ente
  */
-public class Hud {
+public class Hud extends Group {
 
     private final GameScreen gameScreen;
     private final Stage stage;
 
-    public Hud(final GameScreen gameScreen, final Stage stage) {
+    public Hud(final GameScreen gameScreen) {
         assert gameScreen != null;
-        assert stage != null;
 
         this.gameScreen = gameScreen;
-        this.stage = stage;
+        this.stage = gameScreen.getStaticStage();
 
-        stage.addActor(new EnergyDisplay());
+        setZIndex(Globals.Z_INDEX_HUD);
+        addActor(new EnergyDisplay());
     }
 
     private class EnergyDisplay extends Group {
@@ -69,6 +70,8 @@ public class Hud {
 
     private class LevelIndicator extends Actor {
 
+        private static final String CHARSET = "0123456789";
+
         private BitmapFont font;
         private GlyphLayout layout = new GlyphLayout();
 
@@ -77,11 +80,17 @@ public class Hud {
         }
 
         private void updateFont() {
+            if (font != null) {
+                font.dispose();
+            }
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(Globals.FONT_TTF));
             FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
             parameter.size = (int) getHeight();
+            parameter.color = new Color(gameScreen.getThisPlayer().getColor());
+            parameter.genMipMaps = true;
+            parameter.characters = CHARSET;
             font = generator.generateFont(parameter);
-            font.setFixedWidthGlyphs("0123456789");
+            font.setFixedWidthGlyphs(CHARSET);
             generator.dispose();
         }
 
@@ -89,6 +98,11 @@ public class Hud {
         public void draw(Batch batch, float parentAlpha) {
 
             final String level = String.format("%d", gameScreen.getLevel());
+
+            // TODO: hacky update of font color by regenerating the font.
+            if (gameScreen.getThisPlayer().getColor() != font.getColor()) {
+                updateFont();
+            }
             layout.setText(font, level);
             font.draw(batch,
                       level,
@@ -116,8 +130,8 @@ public class Hud {
         private static final float TICK_REL_W = 0.01f;
         private static final float TICK_REL_H = 0.7f;
 
-        private static final float BAR_FRAME_REL_W = 0.1f;
-        private static final float BAR_REL_W = 0.3f;
+        private static final float BAR_FRAME_REL_W = 0.05f;
+        private static final float BAR_REL_W = 0.5f;
 
         @Override
         public void drawDebug(ShapeRenderer shapes) {
@@ -149,6 +163,8 @@ public class Hud {
                         tickWidth / 2;
 
                 final float barFrameWidth = getHeight() * BAR_FRAME_REL_W;
+
+                shapeRenderer.setColor(gameScreen.getThisPlayer().getColor());
 
                 // draw first tick
                 shapeRenderer.rectLine(firstTickX, tickBeginY, firstTickX, tickEndY, tickWidth);

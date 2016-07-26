@@ -99,27 +99,34 @@ public class Simulation {
         for (final ContactTuple i : contacts) {
             if (!i.isDestroyed(destroyedBodies)) {
                 Gdx.app.debug(getClass().toString(), String.format("Contact: %s", i));
-                // first create resulting body
-                final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
-                final Body newBody = spawnBody(new Vector3(collisionResultDef.position.x,
-                                                           collisionResultDef.position.y,
-                                                           0),
-                                               BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
-                                               new Vector3(collisionResultDef.linearVelocity.x,
-                                                           collisionResultDef.linearVelocity.y,
-                                                           0));
-                // update actors
-                newBody.setUserData(i.getWinnerMass());
-                i.getWinnerMass().setBody(newBody);
-                i.getLooserMass().remove();
-                // destory old bodies
-                world.destroyBody(i.getLooser());
-                destroyedBodies.add(i.getLooser());
-                world.destroyBody(i.getWinner());
-                destroyedBodies.add(i.getWinner());
-                // was one of the destroyed bodies the centered body?
-                if (gameScreen.getCenteredBody() == i.getLooser() || gameScreen.getCenteredBody() == i.getWinner()) {
-                    gameScreen.setCenteredBody(newBody);
+                if (i.isSamePlayerContact()) {
+                    // same player: combine masses
+
+                    // first create resulting body
+                    final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
+                    final Body newBody = spawnBody(new Vector3(collisionResultDef.position.x,
+                                                               collisionResultDef.position.y,
+                                                               0),
+                                                   BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
+                                                   new Vector3(collisionResultDef.linearVelocity.x,
+                                                               collisionResultDef.linearVelocity.y,
+                                                               0));
+                    // update actors
+                    newBody.setUserData(i.getWinnerMass());
+                    i.getWinnerMass().setBody(newBody);
+                    i.getLooserMass().remove();
+                    // destory old bodies
+                    world.destroyBody(i.getLooser());
+                    destroyedBodies.add(i.getLooser());
+                    world.destroyBody(i.getWinner());
+                    destroyedBodies.add(i.getWinner());
+                    // was one of the destroyed bodies the centered body?
+                    if (gameScreen.getCenteredBody() == i.getLooser() || gameScreen.getCenteredBody() == i.getWinner()) {
+                        gameScreen.setCenteredBody(newBody);
+                    }
+                } else {
+                    // not same player: change owner
+                    //                    ((Mass) i.getWinner().getUserData()).setOwner(((Mass) i.getLooser().getUserData()).getOwner());
                 }
             }
         }
@@ -163,6 +170,8 @@ public class Simulation {
                     }
                 }
             }
+            // update bounds for mass
+            bodyMass.updateBounds();
         }
 
         // add energies to players
@@ -186,12 +195,12 @@ public class Simulation {
         return body;
     }
 
-    private static class ContactTuple {
+    private class ContactTuple {
 
         private final Body winner;
         private final Body looser;
 
-        protected ContactTuple(final Body body1, final Body body2) {
+        private ContactTuple(final Body body1, final Body body2) {
             // elect 'winning' body
             if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
                 winner = body2;
@@ -217,12 +226,16 @@ public class Simulation {
             return String.format("(W:%s L:%s)", getWinner(), getLooser());
         }
 
-        protected Body getWinner() {
+        private Body getWinner() {
             return winner;
         }
 
-        protected Body getLooser() {
+        private Body getLooser() {
             return looser;
+        }
+
+        private boolean isSamePlayerContact() {
+            return ((Mass) winner.getUserData()).getOwner() == ((Mass) looser.getUserData()).getOwner();
         }
 
         private Mass getWinnerMass() {
@@ -233,7 +246,7 @@ public class Simulation {
             return (Mass) looser.getUserData();
         }
 
-        protected boolean isDestroyed(final Set<Body> destroyedBodies) {
+        private boolean isDestroyed(final Set<Body> destroyedBodies) {
             return destroyedBodies.contains(winner) || destroyedBodies.contains(looser);
         }
     }

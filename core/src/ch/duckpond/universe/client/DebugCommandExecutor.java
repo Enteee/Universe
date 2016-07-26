@@ -17,7 +17,7 @@ public class DebugCommandExecutor extends CommandExecutor {
     public void newPlayer() throws IllegalAccessException, NoSuchFieldException {
         final Field thisPlayer = GameScreen.class.getDeclaredField("thisPlayer");
         thisPlayer.setAccessible(true);
-        thisPlayer.set(Universe.getInstance(),
+        thisPlayer.set(UniverseGame.getInstance().getScreen(),
                        new Player(new Color(NeonColors.getRandomColor().getColorRGB888())));
     }
 

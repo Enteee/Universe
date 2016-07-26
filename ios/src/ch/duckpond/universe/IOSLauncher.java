@@ -6,7 +6,7 @@ import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration;
 import org.robovm.apple.foundation.NSAutoreleasePool;
 import org.robovm.apple.uikit.UIApplication;
 
-import ch.duckpond.universe.client.Universe;
+import ch.duckpond.universe.client.UniverseGame;
 
 public class IOSLauncher extends IOSApplication.Delegate {
     public static void main(String[] argv) {
@@ -18,6 +18,6 @@ public class IOSLauncher extends IOSApplication.Delegate {
     @Override
     protected IOSApplication createApplication() {
         IOSApplicationConfiguration config = new IOSApplicationConfiguration();
-        return new IOSApplication(Universe.getInstance(), config);
+        return new IOSApplication(UniverseGame.getInstance(), config);
     }
 }

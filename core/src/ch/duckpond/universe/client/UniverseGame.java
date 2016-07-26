@@ -17,20 +17,21 @@ import ch.duckpond.universe.client.screen.GameScreen;
  *
  * @author ente
  */
-public class Universe extends Game {
+public class UniverseGame extends Game {
 
-    private static final Universe universe = new Universe();
+    private static final UniverseGame UNIVERSE_GAME = new UniverseGame();
     private Console console;
+
     /**
      * Body on which to center the view.
      */
     private Body centeredBody;
 
-    private Universe() {
+    private UniverseGame() {
     }
 
-    public static Universe getInstance() {
-        return universe;
+    public static UniverseGame getInstance() {
+        return UNIVERSE_GAME;
     }
 
     @Override

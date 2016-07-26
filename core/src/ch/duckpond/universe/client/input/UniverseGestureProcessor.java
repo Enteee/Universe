@@ -40,7 +40,7 @@
 //        } else {
 //            // set mass spawn velocity
 //            final Vector3 panPoint = gameScreen.getCamera().unproject(new Vector3(x, y, 0));
-//            gameScreen.setMassSpawnVelocityWorld(new Vector3(gameScreen.getMassSpawnPointWorld().x - panPoint.x,
+//            gameScreen.setMassSpawnVelocity(new Vector3(gameScreen.getMassSpawnPointWorld().x - panPoint.x,
 //                                                             gameScreen.getMassSpawnPointWorld().y - panPoint.y,
 //                                                             0));
 //        }

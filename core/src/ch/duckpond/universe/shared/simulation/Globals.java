@@ -1,6 +1,7 @@
 package ch.duckpond.universe.shared.simulation;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 
 import java.util.Random;
 
@@ -20,16 +21,20 @@ public class Globals {
     public static final int WORLD_V_HEIGTH = (int) (WORLD_V_WIDTH * ASPECT_RATIO);
     public static final int STATIC_V_WIDTH = 800;
     public static final int STATIC_V_HEIGTH = (int) (STATIC_V_WIDTH * ASPECT_RATIO);
-
+    /**
+     * Level scaling.
+     */
     public static final int LEVE_START_ENERGY = 5000;
     public static final int LEVE_LOOSE_ENERGY = 1000;
     public static final int LEVE_WIN_ENERGY = 10000;
-
+    /**
+     * Colors with specific meaning.
+     */
+    public static final Color WORLD_BACKGROUND_COLOR = new Color(0, 0, 0, 1);
     /**
      * The game font.
      */
     public static final String FONT_TTF = "fonts/FifteenNarrow.ttf";
-
     /**
      * Radius of new spawning mass
      */
@@ -40,7 +45,7 @@ public class Globals {
      */
     public static final float MASS_SURFACE_WIDTH = 1f;
     /**
-     * Camera behaviour
+     * Camera behaviour.
      */
     public static final float CAMERA_ZOOM_FACTOR_GESTURE = 0.01f;
     public static final float CAMERA_ZOOM_FACTOR_INPUT = 0.1f;
@@ -52,6 +57,13 @@ public class Globals {
      */
     public static final float CIRCLE_MENU_BUTTON_SIZE = 2;
     public static final float CIRCLE_MENU_BUTTON_MARGIN = 1;
+
+    /**
+     * Z-indices
+     */
+    public static final int Z_INDEX_BACKGROUND = 0;
+    public static final int Z_INDEX_MASS = 10;
+    public static final int Z_INDEX_HUD = 100;
 
     private Globals() {
     }
