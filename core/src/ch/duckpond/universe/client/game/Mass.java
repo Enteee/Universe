@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client;
+package ch.duckpond.universe.client.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -17,8 +17,8 @@ import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
+import ch.duckpond.universe.client.Player;
 import ch.duckpond.universe.client.circlemenu.CircleMenu;
-import ch.duckpond.universe.client.screen.GameScreen;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
 

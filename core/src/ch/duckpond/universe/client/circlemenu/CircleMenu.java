@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.duckpond.universe.client.screen.GameScreen;
+import ch.duckpond.universe.client.game.GameScreen;
 
 /**
  * Circle menu implementation.

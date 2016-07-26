@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client.scene;
+package ch.duckpond.universe.client.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -11,7 +11,6 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
-import ch.duckpond.universe.client.screen.GameScreen;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
 
@@ -22,10 +21,10 @@ import ch.duckpond.universe.utils.libgdx.BatchUtils;
  */
 public class Hud extends Group {
 
-    private final GameScreen gameScreen;
+    private final ch.duckpond.universe.client.game.GameScreen gameScreen;
     private final Stage stage;
 
-    public Hud(final GameScreen gameScreen) {
+    public Hud(final ch.duckpond.universe.client.game.GameScreen gameScreen) {
         assert gameScreen != null;
 
         this.gameScreen = gameScreen;
@@ -45,7 +44,7 @@ public class Hud extends Group {
          */
         private static final float TEXT_REL_W = 4 / 32f;
         private static final float BAR_REL_W = 27 / 32f;
-        GlyphLayout layout = new GlyphLayout();
+
         private float with;
         private float heigth;
 
@@ -121,7 +120,6 @@ public class Hud extends Group {
         public void drawDebug(ShapeRenderer shapes) {
             shapes.x(getX(), getY(), 1);
         }
-
 
     }
 

@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client.screen;
+package ch.duckpond.universe.client.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -22,7 +22,6 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import ch.duckpond.universe.client.NeonColors;
 import ch.duckpond.universe.client.Player;
-import ch.duckpond.universe.client.scene.Hud;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
@@ -41,7 +40,7 @@ public class GameScreen implements Screen {
     /**
      * Important actors
      */
-    final UniverseBackground background;
+    final Background background;
     final Hud hud;
     private final Stage worldStage;
     private final Viewport worldViewport;
@@ -99,7 +98,7 @@ public class GameScreen implements Screen {
         staticStage.addActor(hud);
 
         // initialize background
-        background = new UniverseBackground(this);
+        background = new Background(this);
         worldStage.addActor(background);
         worldStage.setScrollFocus(background);
     }

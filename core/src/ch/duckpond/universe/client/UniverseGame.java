@@ -10,7 +10,7 @@ import com.badlogic.gdx.physics.box2d.Box2D;
 import com.strongjoshua.console.Console;
 import com.strongjoshua.console.GUIConsole;
 
-import ch.duckpond.universe.client.screen.GameScreen;
+import ch.duckpond.universe.client.game.GameScreen;
 
 /**
  * The main game class.

@@ -5,7 +5,7 @@ import com.strongjoshua.console.CommandExecutor;
 
 import java.lang.reflect.Field;
 
-import ch.duckpond.universe.client.screen.GameScreen;
+import ch.duckpond.universe.client.game.GameScreen;
 
 /**
  * The debug command executor, allows alls commands.

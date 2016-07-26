@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import ch.duckpond.universe.client.Mass;
 import ch.duckpond.universe.client.Player;
-import ch.duckpond.universe.client.screen.GameScreen;
+import ch.duckpond.universe.client.game.GameScreen;
+import ch.duckpond.universe.client.game.Mass;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 /**

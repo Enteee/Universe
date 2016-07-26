@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client.screen;
+package ch.duckpond.universe.client.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -13,7 +13,6 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ActorGestureListener;
 
-import ch.duckpond.universe.client.Mass;
 import ch.duckpond.universe.shared.simulation.Globals;
 
 /**
@@ -21,7 +20,7 @@ import ch.duckpond.universe.shared.simulation.Globals;
  *
  * @author ente
  */
-public class UniverseBackground extends Actor {
+public class Background extends Actor {
 
     final OrthographicCamera camera;
     private final GameScreen gameScreen;
@@ -32,7 +31,7 @@ public class UniverseBackground extends Actor {
     private Vector3 debugLastZoomPoint = new Vector3();
     private Vector3 debugLastZoomPointWorld = new Vector3();
 
-    protected UniverseBackground(final GameScreen gameScreen) {
+    protected Background(final GameScreen gameScreen) {
         assert gameScreen != null;
 
         this.gameScreen = gameScreen;
@@ -88,8 +87,8 @@ public class UniverseBackground extends Actor {
     }
 
     /**
-     * Spwan the mass which was previousely defined with {@link UniverseBackground#setMassSpawnPoint
-     * (Vector3)} and {@link UniverseBackground#setMassSpawnVelocity(Vector3)}
+     * Spwan the mass which was previousely defined with {@link Background#setMassSpawnPoint
+     * (Vector3)} and {@link Background#setMassSpawnVelocity(Vector3)}
      */
     private void spawnMass() {
         if (massSpawning) {

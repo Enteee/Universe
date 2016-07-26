@@ -6,7 +6,7 @@
 //import com.badlogic.gdx.math.MathUtils;
 //import com.badlogic.gdx.math.Vector3;
 //
-//import ch.duckpond.universe.client.screen.GameScreen;
+//import GameScreen;
 //import ch.duckpond.universe.shared.simulation.Globals;
 //
 ///**
