@@ -57,6 +57,7 @@ public class GameScreen implements Screen {
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
     private int level = 1;
+
     /**
      * Body on which to center the view.
      */
@@ -165,11 +166,14 @@ public class GameScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
+    public void render(float deltaTime) {
 
-        // do a simulation step. Do this first so that we can assume that most structures are
-        // already populated with at lest one value.
-        simulation.update();
+        simulation.update(deltaTime);
+
+        // do simulation steps needed
+        // Do this first so that we can assume that most structures are already populated with
+        // at lest one value.
+        simulation.update(deltaTime);
 
         // center camera on centered body
         if (centeredBody != null) {

@@ -29,7 +29,8 @@ import ch.duckpond.universe.utils.libgdx.BatchUtils;
  */
 public class Mass extends Actor {
 
-    public static final int KEEP_LAST_POSITIONS_COUNT = 300;
+    public static final int KEEP_LAST_POSITIONS_COUNT = 50;
+    public static final int KEEP_LAST_POSITION_EVERY_X = 10;
 
     private final GameScreen gameScreen;
     private final CircleMenu circleMenu;
@@ -37,24 +38,37 @@ public class Mass extends Actor {
             KEEP_LAST_POSITIONS_COUNT);
     private Player owner;
     private Body body;
+    private int keepLastPositionCalls = 0;
 
     /**
      * Mass owned by the local player
      *
-     * @param gameScreen gameScreen
+     * @param gameScreen
      */
     public Mass(final GameScreen gameScreen) {
+        this(gameScreen, gameScreen.getThisPlayer());
         assert gameScreen != null;
 
-        setDebug(true);
+    }
+
+    /**
+     * Mass owned by the given player
+     *
+     * @param gameScreen
+     * @param owner
+     */
+    public Mass(final GameScreen gameScreen, final Player owner) {
+        assert gameScreen != null;
+        assert owner != null;
 
         this.gameScreen = gameScreen;
-        owner = gameScreen.getThisPlayer();
+        this.owner = owner;
         circleMenu = new CircleMenu(gameScreen, this);
 
         setZIndex(Globals.Z_INDEX_MASS);
 
         addListener(new MassInputListener());
+
     }
 
     public void setBody(final Body body) {
@@ -90,10 +104,11 @@ public class Mass extends Actor {
      * @param lastPosition position in world coordinates
      */
     public void addLastPosition(final Vector3 lastPosition) {
-        if (lastPosition == null) {
-            throw new GdxRuntimeException("lastPosition == null");
+        assert lastPosition != null;
+        if (keepLastPositionCalls % KEEP_LAST_POSITION_EVERY_X == 0) {
+            lastPositions.add(lastPosition);
         }
-        lastPositions.add(lastPosition);
+        keepLastPositionCalls++;
     }
 
     @Override
@@ -106,23 +121,29 @@ public class Mass extends Actor {
         {
             for (final Fixture fixture : body.getFixtureList()) {
                 final CircleShape circleShape = (CircleShape) fixture.getShape();
-                // velocity trail
-                int lastPositionsLeft = lastPositions.size();
+                // velocity trail, draw from back to front
+                final Color trailColor = new Color(owner.getColor());
+                // alpha channel = 0 looks fancy in combination with shader, alternatively set
+                // alpha channel = intensity in loop
+                trailColor.a = 0;
+                int i = 0;
                 Vector3 lastlastPosition = null;
                 for (final Vector3 lastPosition : lastPositions) {
-                    final float intensity = (float) (Math.log(lastPositionsLeft) / Math.log(
-                            lastPositions.size()));
                     if (lastlastPosition != null) {
-                        final Color trailColor = new Color(owner.getColor());
-                        trailColor.a = 1 - intensity;
-                        shapeRenderer.setColor(new Color(trailColor));
+                        final float intensity = (float) (Math.log(i) / Math.log(lastPositions.size()));
+                        //trailColor.a = intensity;
+                        shapeRenderer.setColor(trailColor);
                         shapeRenderer.rectLine(new Vector2(lastPosition.x, lastPosition.y),
                                                new Vector2(lastlastPosition.x, lastlastPosition.y),
-                                               circleShape.getRadius() - circleShape.getRadius() * intensity);
+                                               circleShape.getRadius() * 2 * intensity);
                     }
                     lastlastPosition = lastPosition;
-                    lastPositionsLeft--;
+                    i++;
                 }
+                shapeRenderer.rectLine(new Vector2(body.getPosition().x, body.getPosition().y),
+                                       new Vector2(lastlastPosition.x, lastlastPosition.y),
+                                       circleShape.getRadius() * 2);
+
 
                 // outer glow border
                 shapeRenderer.setColor(owner.getColor());

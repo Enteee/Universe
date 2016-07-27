@@ -25,7 +25,7 @@ public class Background extends Actor {
     final OrthographicCamera camera;
     private final GameScreen gameScreen;
     private boolean massSpawning = false;
-    private Vector3 massSpawnPointWorld = new Vector3();
+    private Vector3 massSpawnPointActor = new Vector3();
     private Vector3 massSpawnVelocity = new Vector3();
 
     private Vector3 debugLastZoomPoint = new Vector3();
@@ -36,8 +36,6 @@ public class Background extends Actor {
 
         this.gameScreen = gameScreen;
         camera = this.gameScreen.getCamera();
-
-        setDebug(true);
 
         // send to background
         setBounds(0,
@@ -68,13 +66,9 @@ public class Background extends Actor {
      * @param massSpawnPointActor the spawn location in actor coordinates
      */
     private void setMassSpawnPoint(final Vector3 massSpawnPointActor) {
-        this.massSpawnPointWorld = toWorldCoordinates(massSpawnPointActor);
+        this.massSpawnPointActor = new Vector3(massSpawnPointActor);
         this.massSpawnVelocity = new Vector3();
         massSpawning = true;
-    }
-
-    private Vector3 toWorldCoordinates(final Vector3 actorCoordinates) {
-        return new Vector3(actorCoordinates.x + getX(), actorCoordinates.y + getY(), 0);
     }
 
     /**
@@ -93,18 +87,21 @@ public class Background extends Actor {
     private void spawnMass() {
         if (massSpawning) {
             Gdx.app.debug(getClass().getName(), "Mass spawned");
-            final Body body = gameScreen.getSimulation().spawnBody(massSpawnPointWorld,
-                                                                   Globals.MASS_SPAWN_RADIUS * camera.zoom,
-                                                                   massSpawnVelocity);
             final Mass mass = new Mass(gameScreen);
-            mass.setBody(body);
-            body.setUserData(mass);
-
+            final Body body = gameScreen.getSimulation().spawnBody(toWorldCoordinates(
+                    massSpawnPointActor),
+                                                                   Globals.MASS_SPAWN_RADIUS * camera.zoom,
+                                                                   massSpawnVelocity,
+                                                                   mass);
             gameScreen.getWorldStage().addActor(mass);
 
             massSpawnVelocity = new Vector3();
             massSpawning = false;
         }
+    }
+
+    private Vector3 toWorldCoordinates(final Vector3 actorCoordinates) {
+        return new Vector3(actorCoordinates.x + getX(), actorCoordinates.y + getY(), 0);
     }
 
     /**
@@ -149,6 +146,7 @@ public class Background extends Actor {
 
         // draw spawning mass
         if (massSpawning) {
+            final Vector3 massSpawnPointWorld = toWorldCoordinates(massSpawnPointActor);
             shapes.circle(massSpawnPointWorld.x,
                           massSpawnPointWorld.y,
                           Globals.MASS_SPAWN_RADIUS * camera.zoom);

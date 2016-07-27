@@ -17,16 +17,20 @@ public class Globals {
      * the viewports won't overlap.
      */
     public static final float ASPECT_RATIO = Gdx.graphics.getWidth() / Gdx.graphics.getHeight();
-    public static final int WORLD_V_WIDTH = 20;
+    public static final int WORLD_V_WIDTH = 100;
     public static final int WORLD_V_HEIGTH = (int) (WORLD_V_WIDTH * ASPECT_RATIO);
     public static final int STATIC_V_WIDTH = 800;
     public static final int STATIC_V_HEIGTH = (int) (STATIC_V_WIDTH * ASPECT_RATIO);
     /**
      * Level scaling.
      */
-    public static final int LEVE_START_ENERGY = 5000;
-    public static final int LEVE_LOOSE_ENERGY = 1000;
-    public static final int LEVE_WIN_ENERGY = 10000;
+    public static final int LEVEL_START_ENERGY = 5000;
+    public static final int LEVEL_LOOSE_ENERGY = 1000;
+    public static final int LEVEL_WIN_ENERGY = 10000;
+    /**
+     * Number of enemies per level to add.
+     */
+    public static final float LEVEL_ENEMY_COUNT = 0.1f;
     /**
      * Colors with specific meaning.
      */

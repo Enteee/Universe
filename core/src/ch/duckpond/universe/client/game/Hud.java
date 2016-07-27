@@ -142,9 +142,9 @@ public class Hud extends Group {
 
             // calculate progress
             final float energy = gameScreen.getThisPlayer().getEnergy();
-            final float winEnergy = gameScreen.getLevel() * Globals.LEVE_WIN_ENERGY;
-            final float looseEnergy = gameScreen.getLevel() * Globals.LEVE_LOOSE_ENERGY;
-            final float startEnergy = gameScreen.getLevel() * Globals.LEVE_START_ENERGY;
+            final float winEnergy = gameScreen.getLevel() * Globals.LEVEL_WIN_ENERGY;
+            final float looseEnergy = gameScreen.getLevel() * Globals.LEVEL_LOOSE_ENERGY;
+            final float startEnergy = gameScreen.getLevel() * Globals.LEVEL_START_ENERGY;
 
             batch.end();
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);

@@ -1,6 +1,7 @@
 package ch.duckpond.universe.shared.simulation;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -14,6 +15,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -21,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ch.duckpond.universe.client.NeonColors;
 import ch.duckpond.universe.client.Player;
+import ch.duckpond.universe.client.game.Enemy;
 import ch.duckpond.universe.client.game.GameScreen;
 import ch.duckpond.universe.client.game.Mass;
 import ch.duckpond.universe.utils.box2d.BodyUtils;
@@ -33,8 +37,8 @@ import ch.duckpond.universe.utils.box2d.BodyUtils;
  */
 public class Simulation {
 
-    private static final int UPDATE_POSITION_ITERATIONS = 8;
     private static final float UPDATE_TIME_STEP = 1.0f / 60.0f;
+    private static final int UPDATE_POSITION_ITERATIONS = 8;
     private static final int UPDATE_VELOCITY_ITERATIONS = 10;
     private static final float GRAVITATIONAL_CONSTANT = 1f;
     private static final int MAX_GRAVITY_BODIES_PER_UPDATE = 500;
@@ -42,6 +46,11 @@ public class Simulation {
     private final GameScreen gameScreen;
     private final World world;
     private final List<ContactTuple> contacts = new LinkedList<ContactTuple>();
+
+    private float time = 0;
+    private float timeAccumulator = 0;
+
+    private List<Enemy> enemies = new ArrayList<>();
 
     /**
      * Construct.
@@ -91,9 +100,18 @@ public class Simulation {
     }
 
     /**
-     * Updates the given world.
+     * Updates the given world: Ensures that doUpdate is only called in UPDATE_TIME_STEP - intervals
      */
-    public void update() {
+    public void update(final float deltaTime) {
+        time += deltaTime;
+        timeAccumulator += deltaTime;
+        while (timeAccumulator >= UPDATE_TIME_STEP) {
+            timeAccumulator -= UPDATE_TIME_STEP;
+            doUpdate();
+        }
+    }
+
+    private void doUpdate() {
         // Solve contacts
         final Set<Body> destroyedBodies = new HashSet<Body>();
         for (final ContactTuple i : contacts) {
@@ -110,10 +128,9 @@ public class Simulation {
                                                    BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
                                                    new Vector3(collisionResultDef.linearVelocity.x,
                                                                collisionResultDef.linearVelocity.y,
-                                                               0));
-                    // update actors
-                    newBody.setUserData(i.getWinnerMass());
-                    i.getWinnerMass().setBody(newBody);
+                                                               0),
+                                                   i.getWinnerMass());
+                    // remove loosing actor
                     i.getLooserMass().remove();
                     // destory old bodies
                     world.destroyBody(i.getLooser());
@@ -131,6 +148,26 @@ public class Simulation {
             }
         }
         contacts.clear();
+
+        // Do enemy actions
+        final int enemyCount = (int) Math.floor(1 + gameScreen.getLevel() * Globals.LEVEL_ENEMY_COUNT); // +1: always have at least one enemy
+        if (enemyCount != enemies.size()) {
+            // build new enemies
+            enemies.clear();
+            for (int i = 0; i < enemyCount; i++) {
+                NeonColors enemyColor;
+                do {
+                    enemyColor = NeonColors.getRandomColor();
+                }
+                // don't pick the player color
+                while (enemyColor.getColorRGB888() == Color.rgba8888(gameScreen.getThisPlayer().getColor()));
+                enemies.add(new Enemy(gameScreen, new Color(enemyColor.getColorRGB888())));
+            }
+        }
+        for (final Enemy enemy : enemies) {
+            enemy.act(time);
+        }
+
         // Reset energies
         final Map<Player, Float> energies = new HashMap<>();
         // Get list of bodies
@@ -181,7 +218,9 @@ public class Simulation {
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }
 
-    public Body spawnBody(final Vector3 position, final float radius, final Vector3 velocity) {
+    public Body spawnBody(final Vector3 position, final float radius, final Vector3 velocity, final Mass mass) {
+        assert position != null;
+        assert mass != null;
         final CircleShape circleShape = new CircleShape();
         circleShape.setRadius(radius);
         final BodyDef bodyDef = new BodyDef();
@@ -192,6 +231,10 @@ public class Simulation {
         bodyDef.allowSleep = false;
         final Body body = world.createBody(bodyDef);
         body.createFixture(circleShape, Globals.MASS_DENSITY);
+
+        // link body & mass
+        body.setUserData(mass);
+        mass.setBody(body);
         return body;
     }
 
