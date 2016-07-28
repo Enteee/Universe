@@ -21,7 +21,6 @@ public class UniverseGame extends Game {
 
     private static final UniverseGame UNIVERSE_GAME = new UniverseGame();
     private Console console;
-
     /**
      * Body on which to center the view.
      */
@@ -32,6 +31,10 @@ public class UniverseGame extends Game {
 
     public static UniverseGame getInstance() {
         return UNIVERSE_GAME;
+    }
+
+    public Console getConsole() {
+        return console;
     }
 
     @Override

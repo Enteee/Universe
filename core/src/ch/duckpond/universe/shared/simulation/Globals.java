@@ -45,9 +45,9 @@ public class Globals {
     public static final float MASS_SPAWN_RADIUS = 1;
     public static final float MASS_DENSITY = 1;
     /**
-     * Width of the mass surface.
+     * Fraction of mass radius which should be surface
      */
-    public static final float MASS_SURFACE_WIDTH = 1f;
+    public static final float REL_MASS_SURFACE_WIDTH = 0.2f;
     /**
      * Camera behaviour.
      */

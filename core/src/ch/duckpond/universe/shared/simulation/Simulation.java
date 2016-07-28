@@ -45,7 +45,7 @@ public class Simulation {
 
     private final GameScreen gameScreen;
     private final World world;
-    private final List<ContactTuple> contacts = new LinkedList<ContactTuple>();
+    private final List<ContactTuple> contactTuples = new LinkedList<ContactTuple>();
 
     private float time = 0;
     private float timeAccumulator = 0;
@@ -71,6 +71,7 @@ public class Simulation {
 
             @Override
             public void beginContact(final Contact contact) {
+                contactTuples.add(new ContactTuple(contact));
             }
 
             @Override
@@ -79,8 +80,6 @@ public class Simulation {
 
             @Override
             public void preSolve(final Contact contact, final Manifold oldManifold) {
-                contacts.add(new ContactTuple(contact.getFixtureA().getBody(),
-                                              contact.getFixtureB().getBody()));
             }
 
             @Override
@@ -112,42 +111,48 @@ public class Simulation {
     }
 
     private void doUpdate() {
-        // Solve contacts
+
+        world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
+
+        // Solve contactTuples
         final Set<Body> destroyedBodies = new HashSet<Body>();
-        for (final ContactTuple i : contacts) {
-            if (!i.isDestroyed(destroyedBodies)) {
-                Gdx.app.debug(getClass().toString(), String.format("Contact: %s", i));
-                if (i.isSamePlayerContact()) {
-                    // same player: combine masses
+        for (final ContactTuple contact : contactTuples) {
+            if (!contact.isDestroyed(destroyedBodies)) {
+                Gdx.app.debug(getClass().toString(),
+                              String.format("handling contact: %s samePlayer: %b",
+                                            contact,
+                                            contact.isSamePlayerContact()));
+                if (contact.isSamePlayerContact()) {
+                    //                    // same player: combine masses
 
                     // first create resulting body
-                    final BodyDef collisionResultDef = BodyUtils.getBodyDef(i.getWinner());
+                    final BodyDef collisionResultDef = BodyUtils.getBodyDef(contact.getWinner());
                     final Body newBody = spawnBody(new Vector3(collisionResultDef.position.x,
                                                                collisionResultDef.position.y,
                                                                0),
-                                                   BodyUtils.getRadiusFromMass(i.getWinner().getMass() + i.getLooser().getMass()),
+                                                   BodyUtils.getRadiusFromMass(contact.getWinner().getMass() + contact.getLooser().getMass()),
                                                    new Vector3(collisionResultDef.linearVelocity.x,
                                                                collisionResultDef.linearVelocity.y,
                                                                0),
-                                                   i.getWinnerMass());
+                                                   contact.getWinnerMass());
                     // remove loosing actor
-                    i.getLooserMass().remove();
-                    // destory old bodies
-                    world.destroyBody(i.getLooser());
-                    destroyedBodies.add(i.getLooser());
-                    world.destroyBody(i.getWinner());
-                    destroyedBodies.add(i.getWinner());
+                    contact.getLooserMass().remove();
+                    // destroy old bodies
+                    world.destroyBody(contact.getLooser());
+                    destroyedBodies.add(contact.getLooser());
+                    world.destroyBody(contact.getWinner());
+                    destroyedBodies.add(contact.getWinner());
                     // was one of the destroyed bodies the centered body?
-                    if (gameScreen.getCenteredBody() == i.getLooser() || gameScreen.getCenteredBody() == i.getWinner()) {
+                    if (gameScreen.getCenteredBody() == contact.getLooser() || gameScreen.getCenteredBody() == contact.getWinner()) {
                         gameScreen.setCenteredBody(newBody);
                     }
                 } else {
                     // not same player: change owner
-                    //                    ((Mass) i.getWinner().getUserData()).setOwner(((Mass) i.getLooser().getUserData()).getOwner());
+                    ((Mass) contact.getLooser().getUserData()).setOwner(((Mass) contact.getWinner().getUserData()).getOwner());
                 }
             }
         }
-        contacts.clear();
+        contactTuples.clear();
 
         // Do enemy actions
         final int enemyCount = (int) Math.floor(1 + gameScreen.getLevel() * Globals.LEVEL_ENEMY_COUNT); // +1: always have at least one enemy
@@ -185,9 +190,9 @@ public class Simulation {
             if (!energies.containsKey(bodyOwner)) {
                 energies.put(bodyOwner, 0f);
             }
-            float playerEnergy = energies.get(bodyOwner);
-            playerEnergy += BodyUtils.getEnergy(body);
-            energies.put(bodyOwner, playerEnergy);
+            float ownerEnergy = energies.get(bodyOwner);
+            ownerEnergy += BodyUtils.getEnergy(body);
+            energies.put(bodyOwner, ownerEnergy);
             // Body gravity:
             // Random select a maximum amount of bodies
             otherBodies.shuffle();
@@ -215,12 +220,14 @@ public class Simulation {
         for (Map.Entry<Player, Float> energy : energies.entrySet()) {
             energy.getKey().addEnergy(energy.getValue());
         }
-        world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
     }
 
     public Body spawnBody(final Vector3 position, final float radius, final Vector3 velocity, final Mass mass) {
         assert position != null;
+        assert radius > 0;
+        assert velocity != null;
         assert mass != null;
+
         final CircleShape circleShape = new CircleShape();
         circleShape.setRadius(radius);
         final BodyDef bodyDef = new BodyDef();
@@ -242,8 +249,17 @@ public class Simulation {
 
         private final Body winner;
         private final Body looser;
+        private final Vector2 winnerVelocity;
+        private final Vector2 looserVelocity;
+
+        private ContactTuple(final Contact contact) {
+            this(contact.getFixtureA().getBody(), contact.getFixtureB().getBody());
+        }
 
         private ContactTuple(final Body body1, final Body body2) {
+            assert body1 != null;
+            assert body2 != null;
+
             // elect 'winning' body
             if (BodyUtils.getEnergy(body1) < BodyUtils.getEnergy(body2)) {
                 winner = body2;
@@ -262,19 +278,8 @@ public class Simulation {
                     looser = body2;
                 }
             }
-        }
-
-        @Override
-        public String toString() {
-            return String.format("(W:%s L:%s)", getWinner(), getLooser());
-        }
-
-        private Body getWinner() {
-            return winner;
-        }
-
-        private Body getLooser() {
-            return looser;
+            winnerVelocity = new Vector2(winner.getLinearVelocity());
+            looserVelocity = new Vector2(looser.getLinearVelocity());
         }
 
         private boolean isSamePlayerContact() {
@@ -289,8 +294,43 @@ public class Simulation {
             return (Mass) looser.getUserData();
         }
 
+        public Vector2 getWinnerVelocity() {
+            return winnerVelocity;
+        }
+
+        public Vector2 getLooserVelocity() {
+            return looserVelocity;
+        }
+
         private boolean isDestroyed(final Set<Body> destroyedBodies) {
             return destroyedBodies.contains(winner) || destroyedBodies.contains(looser);
+        }
+
+        @Override
+        public int hashCode() {
+            return winner.hashCode() + looser.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ContactTuple) {
+                final ContactTuple otherContact = (ContactTuple) obj;
+                return otherContact.winner == winner && otherContact.looser == looser;
+            }
+            return obj.equals(obj);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("(W:%s L:%s)", getWinner(), getLooser());
+        }
+
+        private Body getWinner() {
+            return winner;
+        }
+
+        private Body getLooser() {
+            return looser;
         }
     }
 }

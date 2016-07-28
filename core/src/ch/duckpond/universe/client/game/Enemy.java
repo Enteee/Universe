@@ -23,7 +23,10 @@ public class Enemy extends Player {
      * Standard deviation of mass spawn interdistance  in seconds.
      */
     public static final float SPAWN_MASS_INTERDISTANCE_STANDARD_DEVIATION = 1;
-
+    /**
+     * Disables enemy actions
+     */
+    private static boolean ENEMY_ACTION = true;
     private final GameScreen gameScreen;
     private float nextMassSpawnTime = 0;
 
@@ -43,6 +46,7 @@ public class Enemy extends Player {
     }
 
     public void act(final float time) {
+        if (!ENEMY_ACTION) return;
         if (nextMassSpawnTime < time) {
             // spawn a mass: not visible by player
             final float massSpawnRadius = 1;
@@ -63,8 +67,6 @@ public class Enemy extends Player {
                           String.format("Mass spawned, position %s", spawnPosition));
 
             rollNextMassSpawnTime(time);
-
-
         }
     }
 }

@@ -140,6 +140,7 @@ public class Mass extends Actor {
                     lastlastPosition = lastPosition;
                     i++;
                 }
+
                 shapeRenderer.rectLine(new Vector2(body.getPosition().x, body.getPosition().y),
                                        new Vector2(lastlastPosition.x, lastlastPosition.y),
                                        circleShape.getRadius() * 2);
@@ -152,7 +153,7 @@ public class Mass extends Actor {
                                      circleShape.getRadius());
 
                 // punch out inner border
-                final float innerCircleRadius = circleShape.getRadius() - Globals.MASS_SURFACE_WIDTH;
+                final float innerCircleRadius = circleShape.getRadius() - circleShape.getRadius() * Globals.REL_MASS_SURFACE_WIDTH;
                 shapeRenderer.setColor(Globals.WORLD_BACKGROUND_COLOR);
                 shapeRenderer.circle(body.getPosition().x, body.getPosition().y, innerCircleRadius);
                 //                shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
