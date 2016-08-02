@@ -57,15 +57,18 @@ public class DesktopLauncherTest extends ApplicationAdapter {
     @Override
     public void render() {
         Batch batch = new SpriteBatch();
-        ShapeRenderer shapeRenderer = BatchUtils.buildShapeRendererFromBatch(batch);
+        ShapeRenderer shapeRenderer = new ShapeRenderer();
+        BatchUtils.syncShapeRendererWithBatch(batch, shapeRenderer);
 
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         FrameBuffer fb = new FrameBuffer(Pixmap.Format.RGBA8888,
                                          viewport.getScreenWidth(),
                                          viewport.getScreenHeight(),
                                          false);
+
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         fb.begin();
         {
 
@@ -93,6 +96,8 @@ public class DesktopLauncherTest extends ApplicationAdapter {
         }
         batch.end();
 
+        batch.dispose();
+        shapeRenderer.dispose();
         fb.dispose();
     }
 }

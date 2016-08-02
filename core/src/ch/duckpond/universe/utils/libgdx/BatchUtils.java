@@ -9,11 +9,15 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public class BatchUtils {
 
-    public static ShapeRenderer buildShapeRendererFromBatch(final Batch batch) {
-        final ShapeRenderer shapeRenderer = new ShapeRenderer();
+    /**
+     * Synchronizes the shape renderer with the given batch renderer
+     *
+     * @param batch
+     * @param shapeRenderer
+     */
+    public static void syncShapeRendererWithBatch(final Batch batch, final ShapeRenderer shapeRenderer) {
         shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
         shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
         shapeRenderer.setColor(batch.getColor());
-        return shapeRenderer;
     }
 }

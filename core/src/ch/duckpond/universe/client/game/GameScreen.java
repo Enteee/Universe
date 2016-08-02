@@ -3,7 +3,6 @@ package ch.duckpond.universe.client.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -13,15 +12,11 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-import ch.duckpond.universe.client.NeonColors;
-import ch.duckpond.universe.client.Player;
 import ch.duckpond.universe.shared.simulation.Globals;
 import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
@@ -46,9 +41,9 @@ public class GameScreen implements Screen {
     private final Viewport worldViewport;
     private final Stage staticStage;
     private final Viewport staticViewport;
-    private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
     private Simulation simulation;
     private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
     /**
      * Camera only used to render final framebuffers with shaders
@@ -56,8 +51,6 @@ public class GameScreen implements Screen {
     private OrthographicCamera fbCamera;
     private FrameBuffer neonTargetAFBO;
     private ShaderProgram glowShader;
-    private int level = 1;
-
     /**
      * Body on which to center the view.
      */
@@ -69,6 +62,8 @@ public class GameScreen implements Screen {
 
         // set up rendering
         batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
+
         camera = new OrthographicCamera();
         fbCamera = new OrthographicCamera();
 
@@ -94,6 +89,16 @@ public class GameScreen implements Screen {
                                                         glowShader.getLog()));
         }
 
+        glowShader.begin();
+        {
+            glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
+            glowShader.setUniformi("samples", GLOW_SAMPLES);
+            glowShader.setUniformf("quality", GLOW_QUALITY);
+            glowShader.setUniformf("intensity", GLOW_INTENSITY);
+            batch.setShader(glowShader);
+        }
+        glowShader.end();
+
         //initialize hud
         hud = new Hud(this);
         staticStage.addActor(hud);
@@ -104,16 +109,16 @@ public class GameScreen implements Screen {
         worldStage.setScrollFocus(background);
     }
 
+    public ShapeRenderer getShapeRenderer() {
+        return shapeRenderer;
+    }
+
     public Body getCenteredBody() {
         return centeredBody;
     }
 
     public void setCenteredBody(final Body centeredBody) {
         this.centeredBody = centeredBody;
-    }
-
-    public Player getThisPlayer() {
-        return thisPlayer;
     }
 
     public OrthographicCamera getCamera() {
@@ -128,47 +133,20 @@ public class GameScreen implements Screen {
         return staticStage;
     }
 
-    public int getLevel() {
-        return level;
-    }
-
     public Simulation getSimulation() {
         return simulation;
     }
 
-    /**
-     * Select a point on the map.
-     *
-     * @param selectPoint the selected point in world coordinates
-     * @return {@code true} if something was selected, {@code false} otherwise
-     */
-    public boolean setSelectPoint(final Vector3 selectPoint) {
-        for (final Body body : simulation.getBodies()) {
-            final Vector3 bodyPosition = new Vector3(body.getPosition().x,
-                                                     body.getPosition().y,
-                                                     0f);
-            for (final Fixture fixture : body.getFixtureList()) {
-                // detect collision
-                final CircleShape circleShape = (CircleShape) fixture.getShape();
-                // body selected?
-                if (bodyPosition.sub(selectPoint).len() < circleShape.getRadius()) {
-                    centeredBody = body;
-                    return true;
-                }
-            }
-        }
-        return false;
+    public Background getBackground() {
+        return background;
     }
 
     @Override
     public void show() {
-
     }
 
     @Override
     public void render(float deltaTime) {
-
-        simulation.update(deltaTime);
 
         // do simulation steps needed
         // Do this first so that we can assume that most structures are already populated with
@@ -185,13 +163,6 @@ public class GameScreen implements Screen {
             background.updateBounds();
         }
 
-        //clear the background FBO
-        Gdx.gl.glClearColor(Globals.WORLD_BACKGROUND_COLOR.r,
-                            Globals.WORLD_BACKGROUND_COLOR.g,
-                            Globals.WORLD_BACKGROUND_COLOR.b,
-                            Globals.WORLD_BACKGROUND_COLOR.a);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         neonTargetAFBO.begin();
         {
             Gdx.gl.glClearColor(Globals.WORLD_BACKGROUND_COLOR.r,
@@ -202,7 +173,7 @@ public class GameScreen implements Screen {
 
 
             // draw (0,0) reference
-            ShapeRenderer shapeRenderer = BatchUtils.buildShapeRendererFromBatch(batch);
+            BatchUtils.syncShapeRendererWithBatch(batch, shapeRenderer);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             {
                 shapeRenderer.setProjectionMatrix(camera.combined);
@@ -216,15 +187,16 @@ public class GameScreen implements Screen {
         }
         neonTargetAFBO.end();
 
+        // clear background
+        Gdx.gl.glClearColor(Globals.WORLD_BACKGROUND_COLOR.r,
+                            Globals.WORLD_BACKGROUND_COLOR.g,
+                            Globals.WORLD_BACKGROUND_COLOR.b,
+                            Globals.WORLD_BACKGROUND_COLOR.a);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         batch.begin();
         {
             batch.setProjectionMatrix(fbCamera.combined);
-
-            batch.setShader(glowShader);
-            glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
-            glowShader.setUniformi("samples", GLOW_SAMPLES);
-            glowShader.setUniformf("quality", GLOW_QUALITY);
-            glowShader.setUniformf("intensity", GLOW_INTENSITY);
             batch.draw(neonTargetAFBO.getColorBufferTexture(),
                        worldViewport.getScreenX(),
                        worldViewport.getScreenY());
@@ -241,6 +213,12 @@ public class GameScreen implements Screen {
                                          worldViewport.getScreenWidth(),
                                          worldViewport.getScreenHeight(),
                                          false);
+        glowShader.begin();
+        {
+            glowShader.setUniformf("size", neonTargetAFBO.getWidth(), neonTargetAFBO.getHeight());
+        }
+        glowShader.end();
+
         Gdx.app.debug(getClass().getName(),
                       String.format("Viewport (%d x %d)",
                                     worldViewport.getScreenWidth(),
@@ -265,6 +243,11 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        batch.dispose();
+        worldStage.dispose();
+        staticStage.dispose();
 
+        neonTargetAFBO.dispose();
+        glowShader.dispose();
     }
 }

@@ -16,6 +16,7 @@ public class Player {
     private final Color color;
     private final CircularFifoQueue<Float> energies = new CircularFifoQueue<>(
             KEEP_LAST_ENERGIES_COUNT);
+    private float energySubtractor = 0;
 
     public Player(final Color color) {
         this.color = color;
@@ -24,7 +25,11 @@ public class Player {
     }
 
     public void addEnergy(float energy) {
-        energies.add(energy);
+        energies.add(energy - energySubtractor);
+    }
+
+    public void addEnergySubtractor(float energySubtractor) {
+        this.energySubtractor += energySubtractor;
     }
 
     public Color getColor() {
@@ -32,7 +37,7 @@ public class Player {
     }
 
     public float getEnergy() {
-        return energies.get(energies.size() - 1);
+        return Math.max(0, energies.get(energies.size() - 1));
     }
 
 }

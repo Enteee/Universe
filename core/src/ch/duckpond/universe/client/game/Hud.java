@@ -12,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
 import ch.duckpond.universe.shared.simulation.Globals;
+import ch.duckpond.universe.shared.simulation.Simulation;
 import ch.duckpond.universe.utils.libgdx.BatchUtils;
 
 /**
@@ -21,10 +22,10 @@ import ch.duckpond.universe.utils.libgdx.BatchUtils;
  */
 public class Hud extends Group {
 
-    private final ch.duckpond.universe.client.game.GameScreen gameScreen;
+    private final GameScreen gameScreen;
     private final Stage stage;
 
-    public Hud(final ch.duckpond.universe.client.game.GameScreen gameScreen) {
+    public Hud(final GameScreen gameScreen) {
         assert gameScreen != null;
 
         this.gameScreen = gameScreen;
@@ -79,13 +80,14 @@ public class Hud extends Group {
         }
 
         private void updateFont() {
+            final Simulation simulation = gameScreen.getSimulation();
             if (font != null) {
                 font.dispose();
             }
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(Globals.FONT_TTF));
             FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
             parameter.size = (int) getHeight();
-            parameter.color = new Color(gameScreen.getThisPlayer().getColor());
+            parameter.color = new Color(simulation.getThisPlayer().getColor());
             parameter.genMipMaps = true;
             parameter.characters = CHARSET;
             font = generator.generateFont(parameter);
@@ -95,11 +97,12 @@ public class Hud extends Group {
 
         @Override
         public void draw(Batch batch, float parentAlpha) {
+            final Simulation simulation = gameScreen.getSimulation();
 
-            final String level = String.format("%d", gameScreen.getLevel());
+            final String level = String.format("%d", simulation.getLevel());
 
             // TODO: hacky update of font color by regenerating the font.
-            if (gameScreen.getThisPlayer().getColor() != font.getColor()) {
+            if (simulation.getThisPlayer().getColor() != font.getColor()) {
                 updateFont();
             }
             layout.setText(font, level);
@@ -138,15 +141,17 @@ public class Hud extends Group {
 
         @Override
         public void draw(Batch batch, float parentAlpha) {
-            final ShapeRenderer shapeRenderer = BatchUtils.buildShapeRendererFromBatch(batch);
+            final Simulation simulation = gameScreen.getSimulation();
+            final ShapeRenderer shapeRenderer = gameScreen.getShapeRenderer();
 
             // calculate progress
-            final float energy = gameScreen.getThisPlayer().getEnergy();
-            final float winEnergy = gameScreen.getLevel() * Globals.LEVEL_WIN_ENERGY;
-            final float looseEnergy = gameScreen.getLevel() * Globals.LEVEL_LOOSE_ENERGY;
-            final float startEnergy = gameScreen.getLevel() * Globals.LEVEL_START_ENERGY;
+            final float energy = simulation.getThisPlayer().getEnergy();
+            final float winEnergy = simulation.getWinEnergy();
+            final float looseEnergy = simulation.getLooseEnergy();
+            final float startEnergy = simulation.getStartEneryy();
 
             batch.end();
+            BatchUtils.syncShapeRendererWithBatch(batch, shapeRenderer);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             {
                 final float tickWidth = getWidth() * TICK_REL_W;
@@ -162,16 +167,18 @@ public class Hud extends Group {
 
                 final float barFrameWidth = getHeight() * BAR_FRAME_REL_W;
 
-                shapeRenderer.setColor(gameScreen.getThisPlayer().getColor());
+                shapeRenderer.setColor(simulation.getThisPlayer().getColor());
 
                 // draw first tick
                 shapeRenderer.rectLine(firstTickX, tickBeginY, firstTickX, tickEndY, tickWidth);
 
-                // draw loose tick
-                shapeRenderer.rectLine(looseTickX, tickBeginY, looseTickX, tickEndY, tickWidth);
-
-                // draw start tick
-                shapeRenderer.rectLine(startTickX, tickBeginY, startTickX, tickEndY, tickWidth);
+                if (simulation.hasLevelStarted()) {
+                    // draw loose tick
+                    shapeRenderer.rectLine(looseTickX, tickBeginY, looseTickX, tickEndY, tickWidth);
+                } else {
+                    // draw start tick, if level has not started yet.
+                    shapeRenderer.rectLine(startTickX, tickBeginY, startTickX, tickEndY, tickWidth);
+                }
 
                 // draw middle line
                 shapeRenderer.rectLine(firstTickX,
@@ -180,15 +187,31 @@ public class Hud extends Group {
                                        getHeight() / 2,
                                        barFrameWidth);
 
+                // draw bar
                 final float barWidth = getHeight() * BAR_REL_W;
+                final float barY = getHeight() / 2;
                 final float barStartX = firstTickX + tickWidth / 2;
-                final float barEndX = getX() + getWidth() * energy / winEnergy;
 
-                shapeRenderer.rectLine(barStartX,
-                                       getHeight() / 2,
-                                       barEndX,
-                                       getHeight() / 2,
-                                       barWidth);
+                final Color barColor = new Color(shapeRenderer.getColor());
+                final Color barMassSpawnColor = new Color(barColor.r, barColor.g, barColor.b, 0);
+
+                final float barMassSpawnWidth = getWidth() * gameScreen.getBackground().getMassSpawnEnergy() / winEnergy;
+                float barEndX = getX() + getWidth() * energy / winEnergy;
+
+                // level has not started yet: mass spawn indicator in front of bar
+                if (!simulation.hasLevelStarted()) {
+                    barEndX += barMassSpawnWidth;
+                }
+
+                final float barMassSpawnX = barEndX - barMassSpawnWidth;
+
+                shapeRenderer.rectLine(barStartX, barY, barEndX, barY, barWidth);
+
+                shapeRenderer.setColor(barMassSpawnColor);
+                {
+                    shapeRenderer.rectLine(barMassSpawnX, barY, barEndX, barY, barWidth);
+                }
+                shapeRenderer.setColor(barColor);
             }
             shapeRenderer.end();
             batch.begin();

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -14,6 +15,8 @@ import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ActorGestureListener;
 
 import ch.duckpond.universe.shared.simulation.Globals;
+import ch.duckpond.universe.shared.simulation.Simulation;
+import ch.duckpond.universe.utils.box2d.BodyUtils;
 
 /**
  * The universe background
@@ -36,6 +39,8 @@ public class Background extends Actor {
 
         this.gameScreen = gameScreen;
         camera = this.gameScreen.getCamera();
+
+        setDebug(true);
 
         // send to background
         setBounds(0,
@@ -77,7 +82,50 @@ public class Background extends Actor {
      * @param massSpawnVelocity velocity in actor coordinates
      */
     private void setMassSpawnVelocity(final Vector3 massSpawnVelocity) {
-        this.massSpawnVelocity = new Vector3(massSpawnVelocity);
+        if (massSpawning) {
+            final Simulation simulation = gameScreen.getSimulation();
+            final float playerEnergy = simulation.getThisPlayer().getEnergy();
+            final float mass = BodyUtils.getMassFromRadius(Globals.MASS_SPAWN_RADIUS * camera.zoom);
+
+            // set mass spawn velocity
+            this.massSpawnVelocity = new Vector3(massSpawnVelocity);
+            if (this.massSpawnVelocity.len() > 0) {
+                // can the player spawn masses with velocity?
+                if (!simulation.hasLevelStarted() && playerEnergy < simulation.getStartEneryy() || simulation.hasLevelStarted() && playerEnergy > simulation.getLooseEnergy()) {
+                    // yes: correct mass spawn velocity if needed
+                    float velocityCorrection = 0;
+                    if (simulation.hasLevelStarted()) {
+                        final float newPlayerEnergy = playerEnergy - getMassSpawnEnergy();
+                        if (playerEnergy > simulation.getLooseEnergy() && newPlayerEnergy < simulation.getLooseEnergy()) {
+                            velocityCorrection = (float) (-this.massSpawnVelocity.len() + Math.sqrt(
+                                    2 / mass * (playerEnergy - simulation.getLooseEnergy())));
+                        }
+                    } else {
+                        final float newPlayerEnergy = playerEnergy + getMassSpawnEnergy();
+                        if (playerEnergy < simulation.getStartEneryy() && newPlayerEnergy > simulation.getStartEneryy()) {
+                            velocityCorrection = (float) (-this.massSpawnVelocity.len() + Math.sqrt(
+                                    2 / mass * (simulation.getStartEneryy() - playerEnergy)));
+                        }
+                    }
+                    this.massSpawnVelocity.scl((this.massSpawnVelocity.len() + velocityCorrection) / this.massSpawnVelocity.len());
+                } else {
+                    // no: velocity to 0
+                    this.massSpawnVelocity = new Vector3();
+                }
+            }
+            Gdx.app.debug(getClass().getName(),
+                          String.format("setMassSpawnVelocity: %s", this.massSpawnVelocity));
+        }
+    }
+
+    /**
+     * Get the energy of the currently spawning mass.
+     *
+     * @return
+     */
+    public float getMassSpawnEnergy() {
+        return BodyUtils.getEnergy(BodyUtils.getMassFromRadius(Globals.MASS_SPAWN_RADIUS * camera.zoom),
+                                   new Vector2(massSpawnVelocity.x, massSpawnVelocity.y));
     }
 
     /**
@@ -86,13 +134,14 @@ public class Background extends Actor {
      */
     private void spawnMass() {
         if (massSpawning) {
-            Gdx.app.debug(getClass().getName(), "Mass spawned");
+            Gdx.app.debug(getClass().getName(), "mass spawned");
             final Mass mass = new Mass(gameScreen);
             final Body body = gameScreen.getSimulation().spawnBody(toWorldCoordinates(
                     massSpawnPointActor),
                                                                    Globals.MASS_SPAWN_RADIUS * camera.zoom,
                                                                    massSpawnVelocity,
                                                                    mass);
+            gameScreen.getSimulation().addBodyToLevelSubtractor(body);
             gameScreen.getWorldStage().addActor(mass);
 
             massSpawnVelocity = new Vector3();

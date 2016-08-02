@@ -46,9 +46,7 @@ public class Mass extends Actor {
      * @param gameScreen
      */
     public Mass(final GameScreen gameScreen) {
-        this(gameScreen, gameScreen.getThisPlayer());
-        assert gameScreen != null;
-
+        this(gameScreen, gameScreen.getSimulation().getThisPlayer());
     }
 
     /**
@@ -68,7 +66,6 @@ public class Mass extends Actor {
         setZIndex(Globals.Z_INDEX_MASS);
 
         addListener(new MassInputListener());
-
     }
 
     public void setBody(final Body body) {
@@ -114,9 +111,10 @@ public class Mass extends Actor {
     @Override
     public void draw(Batch batch, float parentAlpha) {
         // draw massess
-        final ShapeRenderer shapeRenderer = BatchUtils.buildShapeRendererFromBatch(batch);
+        final ShapeRenderer shapeRenderer = gameScreen.getShapeRenderer();
 
         batch.end();
+        BatchUtils.syncShapeRendererWithBatch(batch, shapeRenderer);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         {
             for (final Fixture fixture : body.getFixtureList()) {
@@ -140,10 +138,11 @@ public class Mass extends Actor {
                     lastlastPosition = lastPosition;
                     i++;
                 }
-
-                shapeRenderer.rectLine(new Vector2(body.getPosition().x, body.getPosition().y),
-                                       new Vector2(lastlastPosition.x, lastlastPosition.y),
-                                       circleShape.getRadius() * 2);
+                if (lastlastPosition != null) {
+                    shapeRenderer.rectLine(new Vector2(body.getPosition().x, body.getPosition().y),
+                                           new Vector2(lastlastPosition.x, lastlastPosition.y),
+                                           circleShape.getRadius() * 2);
+                }
 
 
                 // outer glow border
@@ -156,10 +155,6 @@ public class Mass extends Actor {
                 final float innerCircleRadius = circleShape.getRadius() - circleShape.getRadius() * Globals.REL_MASS_SURFACE_WIDTH;
                 shapeRenderer.setColor(Globals.WORLD_BACKGROUND_COLOR);
                 shapeRenderer.circle(body.getPosition().x, body.getPosition().y, innerCircleRadius);
-                //                shapeRenderer.setColor(new Color(0f, 0f, 0f, 0f));
-                //                shapeRenderer.circle(body.getPosition().x,
-                //                                     body.getPosition().y,
-                //                                     innerCircleRadius - GameScreen.GLOW_SAMPLES / 2f * GameScreen.GLOW_QUALITY);
             }
         }
         shapeRenderer.end();

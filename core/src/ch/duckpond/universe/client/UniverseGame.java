@@ -21,6 +21,8 @@ public class UniverseGame extends Game {
 
     private static final UniverseGame UNIVERSE_GAME = new UniverseGame();
     private Console console;
+    private GameScreen gameScreen;
+
     /**
      * Body on which to center the view.
      */
@@ -44,20 +46,22 @@ public class UniverseGame extends Game {
         InputMultiplexer inputMultiplexer = new InputMultiplexer();
         Gdx.input.setInputProcessor(inputMultiplexer);
 
+        // box2d
         Box2D.init();
 
         // We need to set this for some reason in order to make the console work, TODO: // FIXME: 7/22/16
         Gdx.app.getGraphics().setWindowedMode(Gdx.app.getGraphics().getWidth() * 2,
                                               Gdx.app.getGraphics().getHeight() * 2);
         console = new GUIConsole(true);
-        console.setCommandExecutor(new DebugCommandExecutor());
+        console.setCommandExecutor(new DebugCommandExecutor(console));
         console.setKeyID(Input.Keys.ESCAPE);
         console.setMaxEntries(16);
         console.setSizePercent(100, 33);
         console.setPosition(0, 0);
 
         // jump to game
-        setScreen(new GameScreen(inputMultiplexer));
+        gameScreen = new GameScreen(inputMultiplexer);
+        setScreen(gameScreen);
     }
 
 
@@ -65,5 +69,9 @@ public class UniverseGame extends Game {
     public void render() {
         super.render();
         console.draw();
+    }
+
+    public GameScreen getGameScreen() {
+        return gameScreen;
     }
 }

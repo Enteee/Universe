@@ -52,6 +52,11 @@ public class Simulation {
 
     private List<Enemy> enemies = new ArrayList<>();
 
+    private Player thisPlayer = new Player(new Color(NeonColors.getRandomColor().getColorRGB888()));
+
+    private int level = 1;
+    private boolean levelStarted = false;
+
     /**
      * Construct.
      */
@@ -98,6 +103,26 @@ public class Simulation {
         return bodies;
     }
 
+    public int getLevel() {
+        return level;
+    }
+
+    public Player getThisPlayer() {
+        return thisPlayer;
+    }
+
+    public float getLooseEnergy() {
+        return level * Globals.LEVEL_LOOSE_ENERGY;
+    }
+
+    public float getWinEnergy() {
+        return level * Globals.LEVEL_WIN_ENERGY;
+    }
+
+    public float getStartEneryy() {
+        return level * Globals.LEVEL_START_ENERGY;
+    }
+
     /**
      * Updates the given world: Ensures that doUpdate is only called in UPDATE_TIME_STEP - intervals
      */
@@ -112,6 +137,7 @@ public class Simulation {
 
     private void doUpdate() {
 
+        // simulate physics
         world.step(UPDATE_TIME_STEP, UPDATE_VELOCITY_ITERATIONS, UPDATE_POSITION_ITERATIONS);
 
         // Solve contactTuples
@@ -154,23 +180,26 @@ public class Simulation {
         }
         contactTuples.clear();
 
-        // Do enemy actions
-        final int enemyCount = (int) Math.floor(1 + gameScreen.getLevel() * Globals.LEVEL_ENEMY_COUNT); // +1: always have at least one enemy
-        if (enemyCount != enemies.size()) {
-            // build new enemies
-            enemies.clear();
-            for (int i = 0; i < enemyCount; i++) {
-                NeonColors enemyColor;
-                do {
-                    enemyColor = NeonColors.getRandomColor();
+        // Do enemy actions, if level has started yet
+        if (hasLevelStarted()) {
+            final int enemyCount = (int) Math.floor(1 + level * Globals.LEVEL_ENEMY_COUNT); // +1: always
+            // have at least one enemy
+            if (enemyCount != enemies.size()) {
+                // build new enemies
+                enemies.clear();
+                for (int i = 0; i < enemyCount; i++) {
+                    NeonColors enemyColor;
+                    do {
+                        enemyColor = NeonColors.getRandomColor();
+                    }
+                    // don't pick the player color
+                    while (enemyColor.getColorRGB888() == Color.rgba8888(thisPlayer.getColor()));
+                    enemies.add(new Enemy(gameScreen, new Color(enemyColor.getColorRGB888())));
                 }
-                // don't pick the player color
-                while (enemyColor.getColorRGB888() == Color.rgba8888(gameScreen.getThisPlayer().getColor()));
-                enemies.add(new Enemy(gameScreen, new Color(enemyColor.getColorRGB888())));
             }
-        }
-        for (final Enemy enemy : enemies) {
-            enemy.act(time);
+            for (final Enemy enemy : enemies) {
+                enemy.act(time);
+            }
         }
 
         // Reset energies
@@ -220,6 +249,12 @@ public class Simulation {
         for (Map.Entry<Player, Float> energy : energies.entrySet()) {
             energy.getKey().addEnergy(energy.getValue());
         }
+
+        // update level
+        if (thisPlayer.getEnergy() > level * Globals.LEVEL_START_ENERGY) {
+            levelStarted = true;
+        }
+
     }
 
     public Body spawnBody(final Vector3 position, final float radius, final Vector3 velocity, final Mass mass) {
@@ -236,13 +271,26 @@ public class Simulation {
         bodyDef.linearVelocity.set(new Vector2(velocity.x, velocity.y));
         bodyDef.angle = (float) (Math.PI * 2 * Globals.RANDOM.nextFloat());
         bodyDef.allowSleep = false;
+
         final Body body = world.createBody(bodyDef);
         body.createFixture(circleShape, Globals.MASS_DENSITY);
 
         // link body & mass
         body.setUserData(mass);
         mass.setBody(body);
+
         return body;
+    }
+
+    public boolean hasLevelStarted() {
+        return levelStarted;
+    }
+
+    public void addBodyToLevelSubtractor(final Body body) {
+        // update level subtractor if level started
+        if (levelStarted) {
+            thisPlayer.addEnergySubtractor(BodyUtils.getEnergy(body));
+        }
     }
 
     private class ContactTuple {

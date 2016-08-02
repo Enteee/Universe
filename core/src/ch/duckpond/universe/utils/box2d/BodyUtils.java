@@ -1,5 +1,6 @@
 package ch.duckpond.universe.utils.box2d;
 
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
@@ -41,7 +42,22 @@ public class BodyUtils {
      * @return the total energy
      */
     public static float getEnergy(final Body body) {
-        return 0.5f * body.getMass() * body.getLinearVelocity().len() * body.getLinearVelocity().len();
+        return BodyUtils.getEnergy(body.getMass(), body.getLinearVelocity());
+    }
+
+    /**
+     * Get the energy a @{link Body} would have with the given mass and velocity
+     *
+     * @param mass
+     * @param velocity
+     * @return energy of mass with velocity
+     */
+    public static float getEnergy(final float mass, final Vector2 velocity) {
+        return 0.5f * mass * velocity.len() * velocity.len();
+    }
+
+    public static float getMassFromRadius(final float radius) {
+        return (float) (radius * radius * Math.PI * Globals.MASS_DENSITY);
     }
 
     public static float getRadiusFromMass(final float mass) {
