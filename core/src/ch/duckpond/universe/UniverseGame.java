@@ -1,4 +1,4 @@
-package ch.duckpond.universe.client;
+package ch.duckpond.universe;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Game;
@@ -10,6 +10,7 @@ import com.badlogic.gdx.physics.box2d.Box2D;
 import com.strongjoshua.console.Console;
 import com.strongjoshua.console.GUIConsole;
 
+import ch.duckpond.universe.client.DebugCommandExecutor;
 import ch.duckpond.universe.client.game.GameScreen;
 
 /**
@@ -54,7 +55,7 @@ public class UniverseGame extends Game {
                                               Gdx.app.getGraphics().getHeight() * 2);
         console = new GUIConsole(true);
         console.setCommandExecutor(new DebugCommandExecutor(console));
-        console.setKeyID(Input.Keys.ESCAPE);
+        console.setDisplayKeyID(Input.Keys.ESCAPE);
         console.setMaxEntries(16);
         console.setSizePercent(100, 33);
         console.setPosition(0, 0);

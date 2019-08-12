@@ -7,6 +7,7 @@ import com.strongjoshua.console.Console;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import ch.duckpond.universe.UniverseGame;
 import ch.duckpond.universe.client.game.Enemy;
 import ch.duckpond.universe.shared.simulation.Simulation;
 
